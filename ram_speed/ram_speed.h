@@ -18,4 +18,4 @@ enum {
 
 double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n);
 
-std::vector<double> ram_speed_mt_list(int check_size_kilobytes, int mode);
+std::vector<double> ram_speed_mt_list(int check_size_kilobytes, int mode, bool logical_core = false);
