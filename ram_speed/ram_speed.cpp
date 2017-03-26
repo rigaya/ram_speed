@@ -143,8 +143,8 @@ std::vector<double> ram_speed_mt_list(int check_size_kilobytes, int mode, bool l
     }
     if (logical_core && cpu_info.logical_cores != cpu_info.physical_cores) {
         int smt = cpu_info.logical_cores / cpu_info.physical_cores;
-        for (int i_smt = 2; i_smt <= smt; i_smt++) {
-            results.push_back(ram_speed_mt(check_size_kilobytes, mode, cpu_info.physical_cores * i_smt));
+        for (uint32_t ith = cpu_info.physical_cores+1; ith <= cpu_info.logical_cores; ith++) {
+            results.push_back(ram_speed_mt(check_size_kilobytes, mode, ith));
         }
     }
     return results;
