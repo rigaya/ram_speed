@@ -7,9 +7,7 @@
 //   以上に了解して頂ける場合、本ソースコードの使用、複製、改変、再頒布を行って頂いて構いません。
 //  -----------------------------------------------------------------------------------------
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <Windows.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <vector>
@@ -21,6 +19,7 @@
 #include "cpu_info.h"
 #include "simd_util.h"
 #include "ram_speed.h"
+#include "ram_speed_osdep.h"
 
 typedef struct {
     int mode;
@@ -99,7 +98,11 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
 }
 
 int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
+#if defined(_WIN32) || defined(_WIN64)
     return (thread_index % cpu_info.physical_cores) * (cpu_info.logical_cores / cpu_info.physical_cores) + (int)(thread_index / cpu_info.physical_cores);
+#else
+    return thread_index;
+#endif
 }
 
 double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
@@ -166,8 +169,8 @@ int main(int argc, char **argv) {
     char mes[256];
     getCPUInfo(mes, 256);
     fprintf(stderr, "%s\n", mes);
-    FILE *fp = NULL;
-    if (fopen_s(&fp, "result.csv", "w") || NULL == fp) {
+    FILE *fp = fopen("result.csv", "w");
+    if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
         fprintf(fp, "%s\n", mes);

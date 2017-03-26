@@ -7,14 +7,15 @@
 //   以上に了解して頂ける場合、本ソースコードの使用、複製、改変、再頒布を行って頂いて構いません。
 //  -----------------------------------------------------------------------------------------
 
-#include <Windows.h>
 #include <vector>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <intrin.h>
-#include <tchar.h>
+#include <thread>
+#include <chrono>
 #include "cpu_info.h"
+#include "simd_util.h"
+#include "ram_speed_osdep.h"
 
 static int getCPUName(char *buffer, size_t nSize) {
     int CPUInfo[4] = {-1};
@@ -71,6 +72,8 @@ static int getCPUName(char *buffer, size_t nSize) {
     }
     return 0;
 }
+
+#if defined(_WIN32) || defined(_WIN64)
 static int getCPUName(wchar_t *buffer, size_t nSize) {
     int ret = 0;
     char *buf = (char *)calloc(nSize, sizeof(char));
@@ -84,6 +87,7 @@ static int getCPUName(wchar_t *buffer, size_t nSize) {
     }
     return ret;
 }
+#endif
 
 double getCPUDefaultClockFromCPUName() {
     double defaultClock = 0.0;
@@ -98,6 +102,8 @@ double getCPUDefaultClockFromCPUName() {
     }
     return 0.0;
 }
+
+#if defined(_WIN32) || defined(_WIN64)
 
 #include <Windows.h>
 #include <process.h>
@@ -160,7 +166,7 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
                 cache->linesize = Cache->LineSize;
                 cache->size += Cache->Size;
                 cache->associativity = Cache->Associativity;
-                cpu_info->max_cache_level = max(cpu_info->max_cache_level, cache->level);
+                cpu_info->max_cache_level = (std::max<uint32_t>)(cpu_info->max_cache_level, cache->level);
             }
             break;
         }
@@ -181,6 +187,83 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
     return true;
 }
 
+#else //#if defined(_WIN32) || defined(_WIN64)
+#include <iostream>
+#include <fstream>
+
+std::string trim(const std::string& string, const char* trim = " \t\v\r\n") {
+    auto result = string;
+    auto left = string.find_first_not_of(trim);
+    if (left != std::string::npos) {
+        auto right = string.find_last_not_of(trim);
+        result = string.substr(left, right - left + 1);
+    }
+    return result;
+}
+
+std::vector<std::string> split(const std::string &str, const std::string &delim, bool bTrim = false) {
+    std::vector<std::string> res;
+    size_t current = 0, found, delimlen = delim.size();
+    while (std::string::npos != (found = str.find(delim, current))) {
+        auto segment = std::string(str, current, found - current);
+        if (bTrim) {
+            segment = trim(segment);
+        }
+        if (!bTrim || segment.length()) {
+            res.push_back(segment);
+        }
+        current = found + delimlen;
+    }
+    auto segment = std::string(str, current, str.size() - current);
+    if (bTrim) {
+        segment = trim(segment);
+    }
+    if (!bTrim || segment.length()) {
+        res.push_back(std::string(segment.c_str()));
+    }
+    return res;
+}
+
+bool get_cpu_info(cpu_info_t *cpu_info) {
+    memset(cpu_info, 0, sizeof(cpu_info[0]));
+    std::ifstream inputFile("/proc/cpuinfo");
+    std::istreambuf_iterator<char> data_begin(inputFile);
+    std::istreambuf_iterator<char> data_end;
+    std::string script_data = std::string(data_begin, data_end);
+    inputFile.close();
+
+    for (auto line : split(script_data, "\n")) {
+        auto pos = line.find("processor");
+        if (pos != std::string::npos) {
+            int i = 0;
+            if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
+                cpu_info->logical_cores = (std::max)(cpu_info->logical_cores, i + 1u);
+            }
+            continue;
+        }
+        pos = line.find("cpu cores");
+        if (pos != std::string::npos) {
+            int i = 0;
+            if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
+                cpu_info->physical_cores = (std::max)(cpu_info->physical_cores, (uint32_t)i);
+            }
+            continue;
+        }
+        pos = line.find("physical id");
+        if (pos != std::string::npos) {
+            int i = 0;
+            if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
+                cpu_info->nodes = (std::max)(cpu_info->nodes, i + 1u);
+            }
+            continue;
+        }
+    }
+    cpu_info->physical_cores *= (std::max)(1u, cpu_info->nodes);
+    return true;
+}
+#endif //#if defined(_WIN32) || defined(_WIN64)
+
+#if defined(_WIN32) || defined(_WIN64)
 const int LOOP_COUNT = 5000;
 const int CLOCKS_FOR_2_INSTRUCTION = 2;
 const int COUNT_OF_REPEAT = 4; //以下のようにCOUNT_OF_REPEAT分マクロ展開する
@@ -232,7 +315,7 @@ static unsigned int __stdcall getCPUClockMaxSubFunc(void *arg) {
         for (int i = 0; i < 800; i++) {
             //連続で大量に行うことでTurboBoostを働かせる
             //何回か行って最速値を使用する
-            result = min(result, repeatFunc(&test));
+            result = std::min(result, repeatFunc(&test));
         }
         Sleep(1); //一度スレッドを休ませて、仕切りなおす (Sleep(0)でもいいかも)
     }
@@ -271,7 +354,7 @@ double getCPUMaxTurboClock(unsigned int num_thread) {
     //ハーパースレッディングを考慮してスレッドIDを渡す
     int thread_id_multi = (cpu_info.logical_cores > cpu_info.physical_cores) ? cpu_info.logical_cores / cpu_info.physical_cores : 1;
     //上限は物理プロセッサ数、0なら自動的に物理プロセッサ数に設定
-    num_thread = (0 == num_thread) ? max(1, cpu_info.physical_cores - (cpu_info.logical_cores == cpu_info.physical_cores)) : min(num_thread, cpu_info.physical_cores);
+    num_thread = (0 == num_thread) ? std::max(1u, cpu_info.physical_cores - (cpu_info.logical_cores == cpu_info.physical_cores)) : std::min(num_thread, cpu_info.physical_cores);
 
     std::vector<HANDLE> list_of_threads(num_thread, NULL);
     std::vector<UINT64> list_of_result(num_thread, 0);
@@ -296,7 +379,7 @@ double getCPUMaxTurboClock(unsigned int num_thread) {
     } else {
         UINT64 min_result = *std::min_element(list_of_result.begin(), list_of_result.end());
         resultClock = (min_result) ? defaultClock * (double)(LOOP_COUNT * COUNT_OF_REPEAT * COUNT_OF_REPEAT * 2) / (double)min_result : defaultClock;
-        resultClock = max(resultClock, defaultClock);
+        resultClock = std::max(resultClock, defaultClock);
     }
 
     for (auto thread : list_of_threads) {
@@ -307,47 +390,10 @@ double getCPUMaxTurboClock(unsigned int num_thread) {
 
     return resultClock;
 }
-
-#if ENABLE_OPENCL
-#include "cl_func.h"
-#endif
-
-#pragma warning (push)
-#pragma warning (disable: 4100)
-double getCPUDefaultClockOpenCL() {
-#if !ENABLE_OPENCL
-    return 0.0;
-#else
-    int frequency = 0;
-    char buffer[1024] = { 0 };
-    getCPUName(buffer, _countof(buffer));
-    const std::vector<const char*> vendorNameList = { "Intel", "NVIDIA", "AMD" };
-    
-    const char *vendorName = NULL;
-    for (auto vendor : vendorNameList) {
-        if (cl_check_vendor_name(buffer, vendor)) {
-            vendorName = vendor;
-        }
-    }
-    if (NULL != vendorName) {
-        cl_func_t cl = { 0 };
-        cl_data_t data = { 0 };
-        if (CL_SUCCESS == cl_get_func(&cl)
-            && CL_SUCCESS == cl_get_platform_and_device(vendorName, CL_DEVICE_TYPE_CPU, &data, &cl)) {
-            frequency = cl_get_device_max_clock_frequency_mhz(&data, &cl);
-        }
-        cl_release(&data, &cl);
-    }
-    return frequency / 1000.0;
-#endif // !ENABLE_OPENCL
-}
-#pragma warning (pop)
+#endif //#if defined(_WIN32) || defined(_WIN64)
 
 double getCPUDefaultClock() {
-    double defautlClock = getCPUDefaultClockFromCPUName();
-    if (0 >= defautlClock)
-        defautlClock = getCPUDefaultClockOpenCL();
-    return defautlClock;
+    return getCPUDefaultClockFromCPUName();
 }
 
 int getCPUInfo(TCHAR *buffer, size_t nSize) {
@@ -359,41 +405,19 @@ int getCPUInfo(TCHAR *buffer, size_t nSize) {
     } else {
         double defaultClock = getCPUDefaultClockFromCPUName();
         bool noDefaultClockInCPUName = (0.0 >= defaultClock);
-        if (noDefaultClockInCPUName)
-            defaultClock = getCPUDefaultClockOpenCL();
         if (defaultClock > 0.0) {
             if (noDefaultClockInCPUName) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" @ %.2fGHz"), defaultClock);
             }
+#if defined(_WIN32) || defined(_WIN64)
             double maxFrequency = getCPUMaxTurboClock(0);
             //大きな違いがなければ、TurboBoostはないものとして表示しない
             if (maxFrequency / defaultClock > 1.01) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [TB: %.2fGHz]"), maxFrequency);
             }
+#endif //#if defined(_WIN32) || defined(_WIN64)
             _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
         }
     }
     return ret;
-}
-
-BOOL GetProcessTime(HANDLE hProcess, PROCESS_TIME *time) {
-    SYSTEMTIME systime;
-    GetSystemTime(&systime);
-    return (NULL != hProcess
-        && GetProcessTimes(hProcess, (FILETIME *)&time->creation, (FILETIME *)&time->exit, (FILETIME *)&time->kernel, (FILETIME *)&time->user)
-        && (WAIT_OBJECT_0 == WaitForSingleObject(hProcess, 0) || SystemTimeToFileTime(&systime, (FILETIME *)&time->exit)));
-}
-
-double GetProcessAvgCPUUsage(HANDLE hProcess, PROCESS_TIME *start) {
-    PROCESS_TIME current = { 0 };
-    cpu_info_t cpu_info;
-    double result = 0;
-    if (NULL != hProcess
-        && get_cpu_info(&cpu_info)
-        && GetProcessTime(hProcess, &current)) {
-        UINT64 current_total_time = current.kernel + current.user;
-        UINT64 start_total_time = (nullptr == start) ? 0 : start->kernel + start->user;
-        result = (current_total_time - start_total_time) * 100.0 / (double)(cpu_info.logical_cores * (current.exit - ((nullptr == start) ? current.creation : start->exit)));
-    }
-    return result;
 }

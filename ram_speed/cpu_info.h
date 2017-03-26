@@ -11,7 +11,7 @@
 #define _CPU_INFO_H_
 
 #include <stdint.h>
-#include <tchar.h>
+#include "ram_speed_osdep.h"
 
 typedef struct cache_info_t {
     uint16_t count;
@@ -42,12 +42,5 @@ int inline getCPUInfo(TCHAR(&buffer)[size]) {
 
 double getCPUDefaultClock();
 double getCPUMaxTurboClock(unsigned int num_thread);
-
-typedef struct PROCESS_TIME {
-    UINT64 creation, exit, kernel, user;
-} PROCESS_TIME;
-
-BOOL GetProcessTime(HANDLE hProcess, PROCESS_TIME *time);
-double GetProcessAvgCPUUsage(HANDLE hProcess, PROCESS_TIME *start = nullptr);
 
 #endif //_CPU_INFO_H_

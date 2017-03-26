@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="cpu_info.h" />
     <ClInclude Include="ram_speed.h" />
+    <ClInclude Include="ram_speed_osdep.h" />
     <ClInclude Include="simd_util.h" />
   </ItemGroup>
   <ItemGroup>
