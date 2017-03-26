@@ -31,7 +31,8 @@ typedef struct {
 
 
 typedef struct {
-    std::atomic<size_t> check_bit;
+    std::atomic<size_t> check_bit_start;
+    std::atomic<size_t> check_bit_fin;
     size_t check_bit_all;
 } RAM_SPEED_THREAD_WAKE;
 
@@ -66,12 +67,13 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     };
 
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
+    ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 64 * 1024.0 / check_size_bytes + 0.5)));
 
-    thread_wk->check_bit |= (size_t)1 << thread_prm->thread_id;
+    thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
     auto check_bit_expected = thread_wk->check_bit_all;
-    while (!thread_wk->check_bit.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
+    while (!thread_wk->check_bit_start.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
         ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
-        thread_wk->check_bit |= (size_t)1 << thread_prm->thread_id;
+        thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
         check_bit_expected = thread_wk->check_bit_all;
     }
 
@@ -81,20 +83,20 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
         auto fin = std::chrono::high_resolution_clock::now();
         result[i] = std::chrono::duration_cast<std::chrono::microseconds>(fin - start).count();
     }
-    thread_wk->check_bit &= ~((size_t)1 << thread_prm->thread_id);
-    check_bit_expected = 0;
-    while (!thread_wk->check_bit.compare_exchange_strong(check_bit_expected, 0u)) {
+    thread_wk->check_bit_fin |= (size_t)1 << thread_prm->thread_id;
+    check_bit_expected = thread_wk->check_bit_all;
+    while (!thread_wk->check_bit_fin.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
         ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
-        thread_wk->check_bit &= ~((size_t)1 << thread_prm->thread_id);
-        check_bit_expected = 0;
+        thread_wk->check_bit_fin |= (size_t)1 << thread_prm->thread_id;
+        check_bit_expected = thread_wk->check_bit_all;
     }
     _aligned_free(ptr);
 
     //中央値を採用
     std::sort(result, result + TEST_COUNT);
-    const auto time_min = result[TEST_COUNT / 2];
+    const auto time = result[TEST_COUNT / 2];
 
-    thread_prm->megabytes_per_sec = (check_size_bytes * (double)count_n / (1024.0 * 1024.0)) / (time_min * 0.000001);
+    thread_prm->megabytes_per_sec = (check_size_bytes * (double)count_n / (1024.0 * 1024.0)) / (time * 0.000001);
 }
 
 int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
@@ -113,7 +115,8 @@ double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
     cpu_info_t cpu_info;
     get_cpu_info(&cpu_info);
 
-    thread_wake.check_bit = 0;
+    thread_wake.check_bit_start = 0;
+    thread_wake.check_bit_fin = 0;
     thread_wake.check_bit_all = 0;
     for (int i = 0; i < thread_n; i++) {
         thread_wake.check_bit_all |= (size_t)1 << ram_speed_thread_id(i, cpu_info);
