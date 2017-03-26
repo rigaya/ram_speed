@@ -99,7 +99,7 @@ int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
 }
 
 double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
-    std::vector<std::thread> threads(thread_n);
+    std::vector<std::thread> threads;
     std::vector<RAM_SPEED_THREAD> thread_prm(thread_n);
     RAM_SPEED_THREAD_WAKE thread_wake;
     cpu_info_t cpu_info;
@@ -107,22 +107,22 @@ double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
 
     thread_wake.check_bit = 0;
     thread_wake.check_bit_all = 0;
-    for (uint32_t i = 0; i < threads.size(); i++) {
+    for (int i = 0; i < thread_n; i++) {
         thread_wake.check_bit_all |= 1 << ram_speed_thread_id(i, cpu_info);
     }
-    for (uint32_t i = 0; i < threads.size(); i++) {
+    for (int i = 0; i < thread_n; i++) {
         thread_prm[i].physical_cores = cpu_info.physical_cores;
         thread_prm[i].mode = (mode == RAM_SPEED_MODE_RW) ? (i & 1) : mode;
         thread_prm[i].check_size_bytes = (check_size_kilobytes * 1024 / thread_n + 255) & ~255;
         thread_prm[i].thread_id = ram_speed_thread_id(i, cpu_info);
-        threads[i] = std::thread(ram_speed_func, &thread_prm[i], &thread_wake);
+        threads.push_back(std::thread(ram_speed_func, &thread_prm[i], &thread_wake));
         //渡されたスレッドIDからスレッドAffinityを決定
         //特定のコアにスレッドを縛り付ける
         SetThreadAffinityMask(threads[i].native_handle(), (uint64_t)1 << (int)thread_prm[i].thread_id);
         //高優先度で実行
         SetThreadPriority(threads[i].native_handle(), THREAD_PRIORITY_HIGHEST);
     }
-    for (uint32_t i = 0; i < threads.size(); i++) {
+    for (int i = 0; i < thread_n; i++) {
         threads[i].join();
     }
 
