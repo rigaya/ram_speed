@@ -69,9 +69,11 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
 
     thread_wk->check_bit |= (size_t)1 << thread_prm->thread_id;
-    while (thread_wk->check_bit.load() != thread_wk->check_bit_all) {
+    auto check_bit_expected = thread_wk->check_bit_all;
+    while (!thread_wk->check_bit.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
         ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
         thread_wk->check_bit |= (size_t)1 << thread_prm->thread_id;
+        check_bit_expected = thread_wk->check_bit_all;
     }
 
     for (int i = 0; i < TEST_COUNT; i++) {
@@ -81,9 +83,11 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
         result[i] = std::chrono::duration_cast<std::chrono::microseconds>(fin - start).count();
     }
     thread_wk->check_bit &= ~((size_t)1 << thread_prm->thread_id);
-    while (thread_wk->check_bit.load() != 0) {
+    check_bit_expected = 0;
+    while (!thread_wk->check_bit.compare_exchange_strong(check_bit_expected, 0u)) {
         ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
         thread_wk->check_bit &= ~((size_t)1 << thread_prm->thread_id);
+        check_bit_expected = 0;
     }
     _aligned_free(ptr);
 
