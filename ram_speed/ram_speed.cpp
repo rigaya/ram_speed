@@ -71,6 +71,7 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     thread_wk->check_bit |= 1 << thread_prm->thread_id;
     while (thread_wk->check_bit.load() != thread_wk->check_bit_all) {
         ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
+        thread_wk->check_bit |= 1 << thread_prm->thread_id;
     }
 
     for (int i = 0; i < TEST_COUNT; i++) {
@@ -79,7 +80,11 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
         auto fin = std::chrono::high_resolution_clock::now();
         result[i] = std::chrono::duration_cast<std::chrono::microseconds>(fin - start).count();
     }
-    ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
+    thread_wk->check_bit &= ~(1 << thread_prm->thread_id);
+    while (thread_wk->check_bit.load() != 0) {
+        ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
+        thread_wk->check_bit &= ~(1 << thread_prm->thread_id);
+    }
     _aligned_free(ptr);
 
     int64_t time_min = LLONG_MAX;
