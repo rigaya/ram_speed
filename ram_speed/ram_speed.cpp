@@ -51,9 +51,9 @@ extern "C" {
 typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
 void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_wk) {
-    const int TEST_COUNT = 4;
+    const int TEST_COUNT = 31;
     uint32_t check_size_bytes = (thread_prm->check_size_bytes + 255) & ~255;
-    const uint32_t test_kilo_bytes   = (uint32_t)(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 1 : 0.5) * thread_prm->physical_cores * 1024 * 1024 / (std::max)(1.0, log2(check_size_bytes / 1024.0)) + 0.5);
+    const uint32_t test_kilo_bytes   = (uint32_t)(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 1 : 0.5) * thread_prm->physical_cores * 16 * 1024 / (std::max)(1.0, log2(check_size_bytes / 1024.0)) + 0.5);
     const uint32_t warmup_kilo_bytes = test_kilo_bytes * 2;
     uint8_t *ptr = (uint8_t *)_aligned_malloc(check_size_bytes, 64);
     for (uint32_t i = 0; i < check_size_bytes; i++)
@@ -87,9 +87,9 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     }
     _aligned_free(ptr);
 
-    int64_t time_min = LLONG_MAX;
-    for (int i = 0; i < TEST_COUNT; i++)
-        time_min = (std::min)(time_min, result[i]);
+    //中央値を採用
+    std::sort(result, result + TEST_COUNT);
+    const auto time_min = result[TEST_COUNT / 2];
 
     thread_prm->megabytes_per_sec = (check_size_bytes * (double)count_n / (1024.0 * 1024.0)) / (time_min * 0.000001);
 }
