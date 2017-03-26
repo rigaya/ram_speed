@@ -37,11 +37,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="ram_speed.asm">
+    <None Include="ram_speed_x64.asm">
       <Filter>ソース ファイル</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ram_speed_64.asm">
+    </None>
+    <None Include="ram_speed_x86.asm">
       <Filter>ソース ファイル</Filter>
-    </CustomBuild>
+    </None>
   </ItemGroup>
 </Project>
