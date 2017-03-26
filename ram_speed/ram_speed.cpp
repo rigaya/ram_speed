@@ -160,34 +160,36 @@ int main(int argc, char **argv) {
 
     char mes[256];
     getCPUInfo(mes, 256);
-    fprintf(stderr, "%s\r\n", mes);
+    fprintf(stderr, "%s\n", mes);
     FILE *fp = NULL;
-    if (fopen_s(&fp, "result.csv", "wb") || NULL == fp) {
+    if (fopen_s(&fp, "result.csv", "w") || NULL == fp) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
-        fprintf(fp, "%s\r\n", mes);
-        fprintf(fp, "read\r\n");
+        fprintf(fp, "%s\n", mes);
+        fprintf(fp, "read\n");
         for (int i_size = (chek_ram_only) ? 17 : 1; i_size <= 17; i_size++) {
             const int size_in_kilo_byte = 1 << i_size;
-            fprintf(fp, "%6d KB,", size_in_kilo_byte);
+            const bool overMB = size_in_kilo_byte >= 1024;
+            fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");
             std::vector<double> results = ram_speed_mt_list(size_in_kilo_byte, RAM_SPEED_MODE_READ, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6d KB, %2d threads: %6.1f GB/s\n", size_in_kilo_byte, i+1, results[i] / 1024.0);
+                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
-            fprintf(fp, "\r\n");
+            fprintf(fp, "\n");
         }
-        fprintf(fp, "\r\n");
-        fprintf(fp, "write\r\n");
+        fprintf(fp, "\n");
+        fprintf(fp, "write\n");
         for (int i_size = (chek_ram_only) ? 17 : 1; i_size <= 17; i_size++) {
             const int size_in_kilo_byte = 1 << i_size;
-            fprintf(fp, "%6d KB,", size_in_kilo_byte);
+            const bool overMB = size_in_kilo_byte >= 1024;
+            fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");
             std::vector<double> results = ram_speed_mt_list(size_in_kilo_byte, RAM_SPEED_MODE_WRITE, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6d KB, %2d threads: %6.1f GB/s\n", size_in_kilo_byte, i+1, results[i] / 1024.0);
+                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
-            fprintf(fp, "\r\n");
+            fprintf(fp, "\n");
         }
         fclose(fp);
     }
