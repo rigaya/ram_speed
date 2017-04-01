@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
+#include <cmath>
 
 #include "cpu_info.h"
 #include "simd_util.h"
