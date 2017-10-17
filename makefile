@@ -2,7 +2,7 @@ SRCDIR=.
 PROGRAM=ram_speed64
 #PROGRAM=ram_speed32
 CXX=g++
-AS=yasm
+AS=nasm
 LD=gcc
 SRCS=ram_speed/ram_speed.cpp ram_speed/cpu_info.cpp ram_speed/simd_util.cpp
 ASMS=ram_speed/ram_speed_x64.asm
@@ -29,7 +29,7 @@ $(PROGRAM): .depend $(OBJS) $(OBJASMS)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 %.o: %.asm
-	$(AS) $(ASFLAGS) -o $@ $<
+	$(AS) $(ASFLAGS) $< -o $@
 	
 .depend:
 	@rm -f .depend
