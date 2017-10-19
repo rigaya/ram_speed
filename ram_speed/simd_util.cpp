@@ -45,7 +45,21 @@ uint32_t get_availableSIMD() {
             simd |= AVX;
     }
     __cpuid(CPUInfo, 7);
-    if ((simd & AVX) && (CPUInfo[1] & 0x00000020))
+    if ((simd & AVX) && (CPUInfo[1] & 0x00000020)) {
         simd |= AVX2;
+    }
+    if ((simd & AVX) && ((xgetbv >> 5) & 7) == 7) {
+        if (CPUInfo[1] & (1u << 16)) simd |= AVX512F;
+        if (simd & AVX512F) {
+            if (CPUInfo[1] & (1u << 17)) simd |= AVX512DQ;
+            if (CPUInfo[1] & (1u << 21)) simd |= AVX512IFMA;
+            if (CPUInfo[1] & (1u << 26)) simd |= AVX512PF;
+            if (CPUInfo[1] & (1u << 27)) simd |= AVX512ER;
+            if (CPUInfo[1] & (1u << 28)) simd |= AVX512CD;
+            if (CPUInfo[1] & (1u << 30)) simd |= AVX512BW;
+            if (CPUInfo[1] & (1u << 31)) simd |= AVX512VL;
+            if (CPUInfo[2] & (1u <<  1)) simd |= AVX512VBMI;
+        }
+    }
     return simd;
 }
