@@ -145,6 +145,65 @@ read_avx:
 
         ret
 
+
+global read_avx512
+
+;void __stdcall read_avx512(uint8_t *src, uint32_t size, uint32_t count_n) (
+;  Win  Linux
+;  [rcx][rdi] PIXEL_YC       *src
+;  [rdx][rsi] uint32_t        size
+;  [r8] [rdx] uint32_t        count_n
+;)
+
+read_avx512:
+        push rbx
+
+%ifdef LINUX
+        mov r9,  rdi
+        mov eax, esi
+        mov rsi, rdx
+%else
+        push rdi
+        push rsi
+        mov r9,  rcx
+        mov eax, edx
+        mov rsi, r8
+%endif
+        mov edi, 512
+        shr eax, 9
+        align 16
+    .OUTER_LOOP:
+        mov rbx, r9
+        mov rdx, rbx
+        add rdx, 256
+        mov ecx, eax
+    .INNER_LOOP:
+        vmovdqa32 zmm0, [rbx];
+        vmovdqa32 zmm1, [rbx+64];
+        vmovdqa32 zmm2, [rbx+128];
+        vmovdqa32 zmm3, [rbx+192];
+        add rbx, rdi
+        vmovdqa32 zmm4, [rdx];
+        vmovdqa32 zmm5, [rdx+64];
+        vmovdqa32 zmm6, [rdx+128];
+        vmovdqa32 zmm7, [rdx+192];
+        add rdx, rdi
+        dec ecx
+        jnz .INNER_LOOP
+
+        dec esi
+        jnz .OUTER_LOOP
+
+        vzeroupper
+        
+%ifndef LINUX
+        pop rsi
+        pop rdi
+%endif
+        pop rbx
+
+        ret
+
 global write_sse
 
 ;void __stdcall _write_sse(uint8_t *src, uint32_t size, uint32_t count_n) (
@@ -242,6 +301,63 @@ write_avx:
         vmovaps [rdx+32], ymm0 
         vmovaps [rdx+64], ymm0
         vmovaps [rdx+96], ymm0
+        add rdx, rdi
+        dec ecx
+        jnz .INNER_LOOP
+
+        dec esi
+        jnz .OUTER_LOOP
+
+        vzeroupper
+        
+%ifndef LINUX
+        pop rsi
+        pop rdi
+%endif
+        pop rbx
+
+        ret
+
+global write_avx512
+
+;void __stdcall _write_avx512(uint8_t *src, uint32_t size, uint32_t count_n) (
+;  [esp+08] PIXEL_YC       *src
+;  [esp+16] uint32_t        size
+;  [esp+20] uint32_t        count_n
+;)
+
+write_avx512:
+        push rbx
+
+%ifdef LINUX
+        mov r9,  rdi
+        mov eax, esi
+        mov rsi, rdx
+%else
+        push rdi
+        push rsi
+        mov r9,  rcx
+        mov eax, edx
+        mov rsi, r8
+%endif
+        mov edi, 512
+        shr eax, 9
+        align 16
+    .OUTER_LOOP:
+        mov rbx, r9
+        mov rdx, rbx
+        add rdx, 256
+        mov ecx, eax
+    .INNER_LOOP:
+        vmovdqa32 [rbx],     zmm0 
+        vmovdqa32 [rbx+64],  zmm0 
+        vmovdqa32 [rbx+128], zmm0
+        vmovdqa32 [rbx+192], zmm0
+        add rbx, rdi
+        vmovdqa32 [rdx],     zmm0 
+        vmovdqa32 [rdx+64],  zmm0 
+        vmovdqa32 [rdx+128], zmm0
+        vmovdqa32 [rdx+192], zmm0
         add rdx, rdi
         dec ecx
         jnz .INNER_LOOP

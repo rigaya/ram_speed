@@ -60,8 +60,10 @@ extern "C" {
 #endif
     extern void read_sse(uint8_t *src, uint32_t size, uint32_t count_n);
     extern void read_avx(uint8_t *src, uint32_t size, uint32_t count_n);
+    extern void read_avx512(uint8_t *src, uint32_t size, uint32_t count_n);
     extern void write_sse(uint8_t *dst, uint32_t size, uint32_t count_n);
     extern void write_avx(uint8_t *dst, uint32_t size, uint32_t count_n);
+    extern void write_avx512(uint8_t *dst, uint32_t size, uint32_t count_n);
 #ifdef __cplusplus
 }
 #endif
@@ -71,18 +73,19 @@ typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
 void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_wk) {
     const int TEST_COUNT = 31;
-    uint32_t check_size_bytes = (thread_prm->check_size_bytes + 255) & ~255;
+    uint32_t check_size_bytes = (thread_prm->check_size_bytes + 511) & ~511;
     const uint32_t test_kilo_bytes   = (uint32_t)(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 1 : 0.5) * thread_prm->physical_cores * 4 * 1024 / (std::max)(1.0, log2(check_size_bytes / 1024.0)) + 0.5);
     const uint32_t warmup_kilo_bytes = test_kilo_bytes * 2;
     uint8_t *ptr = (uint8_t *)_aligned_malloc(check_size_bytes, 64);
     for (uint32_t i = 0; i < check_size_bytes; i++)
         ptr[i] = 0;
     uint32_t count_n = std::max(1, (int)(test_kilo_bytes * 1024.0 / check_size_bytes + 0.5));
-    int avx = 0 != (get_availableSIMD() & AVX);
+    const int avx = (0 != (get_availableSIMD() & AVX)) + (0 != (get_availableSIMD() & AVX512F));
     int64_t result[TEST_COUNT];
-    static const func_ram_test RAM_TEST_LIST[][2] = {
+    static const func_ram_test RAM_TEST_LIST[][3] = {
         { read_sse, write_sse },
         { read_avx, write_avx },
+        { read_avx512, write_avx512 }
     };
 
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
@@ -143,7 +146,7 @@ double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
     for (int i = 0; i < thread_n; i++) {
         thread_prm[i].physical_cores = cpu_info.physical_cores;
         thread_prm[i].mode = (mode == RAM_SPEED_MODE_RW) ? (i & 1) : mode;
-        thread_prm[i].check_size_bytes = (check_size_kilobytes * 1024 / thread_n + 255) & ~255;
+        thread_prm[i].check_size_bytes = (check_size_kilobytes * 1024 / thread_n + 511) & ~511;
         thread_prm[i].thread_id = ram_speed_thread_id(i, cpu_info);
         threads.push_back(std::thread(ram_speed_func, &thread_prm[i], &thread_wake));
         //渡されたスレッドIDからスレッドAffinityを決定
@@ -197,7 +200,7 @@ int main(int argc, char **argv) {
     } else {
         fprintf(fp, "%s\n", mes);
         fprintf(fp, "read\n");
-        for (int i_size = (chek_ram_only) ? 17 : 1; i_size <= 17; i_size++) {
+        for (int i_size = (chek_ram_only) ? 17 : 2; i_size <= 17; i_size++) {
             const int size_in_kilo_byte = 1 << i_size;
             const bool overMB = size_in_kilo_byte >= 1024;
             fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");
@@ -210,7 +213,7 @@ int main(int argc, char **argv) {
         }
         fprintf(fp, "\n");
         fprintf(fp, "write\n");
-        for (int i_size = (chek_ram_only) ? 17 : 1; i_size <= 17; i_size++) {
+        for (int i_size = (chek_ram_only) ? 17 : 2; i_size <= 17; i_size++) {
             const int size_in_kilo_byte = 1 << i_size;
             const bool overMB = size_in_kilo_byte >= 1024;
             fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");

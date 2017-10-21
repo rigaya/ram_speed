@@ -136,6 +136,58 @@ global _read_avx
         ret
 
 
+global _read_avx512
+
+;void __stdcall read_avx512(uint8_t *src, uint32_t size, uint32_t count_n) (
+;  [esp+04] PIXEL_YC       *src
+;  [esp+08] uint32_t        size
+;  [esp+12] uint32_t        count_n
+;)
+
+    _read_avx512:
+        push ebp
+        push edi
+        push esi
+        push ebx
+; @+16
+
+        mov edi, 512
+        mov esi, [esp+16+12]; count_n
+        mov eax, [esp+16+04]; src
+        mov ebp, [esp+16+08]; size
+        shr ebp, 9
+        align 16
+    .OUTER_LOOP:
+        mov ebx, eax; src
+        mov edx, ebx
+        add edx, 256
+        mov ecx, ebp
+    .INNER_LOOP:
+        vmovdqa32 zmm0, [ebx]
+        vmovdqa32 zmm1, [ebx+64]
+        vmovdqa32 zmm2, [ebx+128]
+        vmovdqa32 zmm3, [ebx+192]
+        add ebx, edi
+        vmovdqa32 zmm4, [edx]
+        vmovdqa32 zmm5, [edx+64]
+        vmovdqa32 zmm6, [edx+128]
+        vmovdqa32 zmm7, [edx+192]
+        add edx, edi
+        dec ecx
+        jnz .INNER_LOOP
+
+        dec esi
+        jnz .OUTER_LOOP
+
+        vzeroupper
+
+        pop ebx
+        pop esi
+        pop edi
+        pop ebp
+
+        ret
+
 global _write_sse
 
 ;void __stdcall write_sse(uint8_t *src, uint32_t size, uint32_t count_n) (
@@ -240,3 +292,54 @@ _write_avx:
 
         ret
 
+global _write_avx512
+
+;void __stdcall write_avx512(uint8_t *src, uint32_t size, uint32_t count_n) (
+;  [esp+04] PIXEL_YC       *src
+;  [esp+08] uint32_t        size
+;  [esp+12] uint32_t        count_n
+;)
+
+_write_avx512:
+        push ebp
+        push edi
+        push esi
+        push ebx
+; @+16
+
+        mov edi, 512
+        mov esi, [esp+16+12]; count_n
+        mov eax, [esp+16+04]; src
+        mov ebp, [esp+16+08]; size
+        shr ebp, 9
+        align 16
+    .OUTER_LOOP:
+        mov ebx, eax; src
+        mov edx, ebx
+        add edx, 256
+        mov ecx, ebp
+    .INNER_LOOP:
+        vmovdqa32 [ebx],     zmm0 
+        vmovdqa32 [ebx+64],  zmm0 
+        vmovdqa32 [ebx+128], zmm0
+        vmovdqa32 [eax+192], zmm0
+        add ebx, edi
+        vmovdqa32 [edx],     zmm0 
+        vmovdqa32 [edx+64],  zmm0 
+        vmovdqa32 [edx+128], zmm0
+        vmovdqa32 [edx+192], zmm0
+        add edx, edi
+        dec ecx
+        jnz .INNER_LOOP
+
+        dec esi
+        jnz .OUTER_LOOP
+
+        vzeroupper
+
+        pop ebx
+        pop esi
+        pop edi
+        pop ebp
+
+        ret
