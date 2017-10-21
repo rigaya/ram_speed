@@ -40,9 +40,13 @@
 #include "ram_speed.h"
 #include "ram_speed_osdep.h"
 
+static inline size_t align_size(size_t i) {
+    return (i + 511) & ~511;
+}
+
 typedef struct {
     int mode;
-    uint32_t check_size_bytes;
+    size_t check_size_bytes;
     uint32_t thread_id;
     uint32_t physical_cores;
     double megabytes_per_sec;
@@ -73,13 +77,13 @@ typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
 void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_wk) {
     const int TEST_COUNT = 31;
-    uint32_t check_size_bytes = (thread_prm->check_size_bytes + 511) & ~511;
-    const uint32_t test_kilo_bytes   = (uint32_t)(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 1 : 0.5) * thread_prm->physical_cores * 4 * 1024 / (std::max)(1.0, log2(check_size_bytes / 1024.0)) + 0.5);
-    const uint32_t warmup_kilo_bytes = test_kilo_bytes * 2;
+    size_t check_size_bytes = align_size(thread_prm->check_size_bytes);
+    const size_t test_bytes   = std::max(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 4096 : 2048) * 1024 * thread_prm->physical_cores, check_size_bytes);
+    const size_t warmup_bytes = test_bytes * 2;
     uint8_t *ptr = (uint8_t *)_aligned_malloc(check_size_bytes, 64);
-    for (uint32_t i = 0; i < check_size_bytes; i++)
+    for (size_t i = 0; i < check_size_bytes; i++)
         ptr[i] = 0;
-    uint32_t count_n = std::max(1, (int)(test_kilo_bytes * 1024.0 / check_size_bytes + 0.5));
+    uint32_t count_n = std::max(1u, (uint32_t)(test_bytes / check_size_bytes));
     const int avx = (0 != (get_availableSIMD() & AVX)) + (0 != (get_availableSIMD() & AVX512F));
     int64_t result[TEST_COUNT];
     static const func_ram_test RAM_TEST_LIST[][3] = {
@@ -89,12 +93,12 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     };
 
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
-    ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 64 * 1024.0 / check_size_bytes + 0.5)));
+    ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(32 * warmup_bytes / check_size_bytes)));
 
     thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
     auto check_bit_expected = thread_wk->check_bit_all;
     while (!thread_wk->check_bit_start.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
-        ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
+        ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(warmup_bytes / check_size_bytes)));
         thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
         check_bit_expected = thread_wk->check_bit_all;
     }
@@ -108,7 +112,7 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     thread_wk->check_bit_fin |= (size_t)1 << thread_prm->thread_id;
     check_bit_expected = thread_wk->check_bit_all;
     while (!thread_wk->check_bit_fin.compare_exchange_strong(check_bit_expected, thread_wk->check_bit_all)) {
-        ram_test(ptr, check_size_bytes, std::max(1, (int)(warmup_kilo_bytes * 1024.0 / check_size_bytes + 0.5)));
+        ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(warmup_bytes / check_size_bytes)));
         thread_wk->check_bit_fin |= (size_t)1 << thread_prm->thread_id;
         check_bit_expected = thread_wk->check_bit_all;
     }
@@ -129,7 +133,18 @@ int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
 #endif
 }
 
-double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
+bool check_size_and_thread(size_t check_size, int thread_n) {
+    for (int i = 0; i < thread_n; i++) {
+        auto size_i0 = align_size((i + 0) * check_size / thread_n);
+        auto size_i1 = align_size((i + 1) * check_size / thread_n);
+        if (size_i1 == size_i0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+double ram_speed_mt(size_t check_size, int mode, int thread_n) {
     thread_n = std::min<int>(thread_n, sizeof(size_t) * 8);
     std::vector<std::thread> threads;
     std::vector<RAM_SPEED_THREAD> thread_prm(thread_n);
@@ -144,9 +159,11 @@ double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
         thread_wake.check_bit_all |= (size_t)1 << ram_speed_thread_id(i, cpu_info);
     }
     for (int i = 0; i < thread_n; i++) {
+        auto size_i0 = align_size((i + 0) * check_size / thread_n);
+        auto size_i1 = align_size((i + 1) * check_size / thread_n);
         thread_prm[i].physical_cores = cpu_info.physical_cores;
         thread_prm[i].mode = (mode == RAM_SPEED_MODE_RW) ? (i & 1) : mode;
-        thread_prm[i].check_size_bytes = (check_size_kilobytes * 1024 / thread_n + 511) & ~511;
+        thread_prm[i].check_size_bytes = size_i1 - size_i0;
         thread_prm[i].thread_id = ram_speed_thread_id(i, cpu_info);
         threads.push_back(std::thread(ram_speed_func, &thread_prm[i], &thread_wake));
         //渡されたスレッドIDからスレッドAffinityを決定
@@ -166,21 +183,32 @@ double ram_speed_mt(int check_size_kilobytes, int mode, int thread_n) {
     return sum;
 }
 
-std::vector<double> ram_speed_mt_list(int check_size_kilobytes, int mode, bool logical_core) {
+std::vector<double> ram_speed_mt_list(size_t check_size, int mode, bool logical_core) {
     cpu_info_t cpu_info;
     get_cpu_info(&cpu_info);
 
     std::vector<double> results;
     for (uint32_t ith = 1; ith <= cpu_info.physical_cores; ith++) {
-        results.push_back(ram_speed_mt(check_size_kilobytes, mode, ith));
+        if (!check_size_and_thread(check_size, ith)) {
+            return results;
+        }
+        results.push_back(ram_speed_mt(check_size, mode, ith));
     }
     if (logical_core && cpu_info.logical_cores != cpu_info.physical_cores) {
         int smt = cpu_info.logical_cores / cpu_info.physical_cores;
         for (uint32_t ith = cpu_info.physical_cores+1; ith <= cpu_info.logical_cores; ith++) {
-            results.push_back(ram_speed_mt(check_size_kilobytes, mode, ith));
+            if (!check_size_and_thread(check_size, ith)) {
+                return results;
+            }
+            results.push_back(ram_speed_mt(check_size, mode, ith));
         }
     }
     return results;
+}
+
+double step(double d) {
+    if (d < 18.0) return 1.0; //256KB
+    return 0.25;
 }
 
 int main(int argc, char **argv) {
@@ -200,27 +228,33 @@ int main(int argc, char **argv) {
     } else {
         fprintf(fp, "%s\n", mes);
         fprintf(fp, "read\n");
-        for (int i_size = (chek_ram_only) ? 17 : 2; i_size <= 17; i_size++) {
-            const int size_in_kilo_byte = 1 << i_size;
-            const bool overMB = size_in_kilo_byte >= 1024;
-            fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");
-            std::vector<double> results = ram_speed_mt_list(size_in_kilo_byte, RAM_SPEED_MODE_READ, check_logical_cores);
+        for (double i_size = (chek_ram_only) ? 27 : 12; i_size <= 27; i_size += step(i_size)) {
+            if (i_size >= sizeof(size_t) * 8) {
+                break;
+            }
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
+            fprintf(fp, "%6d %s,", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB");
+            std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_READ, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
             fprintf(fp, "\n");
         }
         fprintf(fp, "\n");
         fprintf(fp, "write\n");
-        for (int i_size = (chek_ram_only) ? 17 : 2; i_size <= 17; i_size++) {
-            const int size_in_kilo_byte = 1 << i_size;
-            const bool overMB = size_in_kilo_byte >= 1024;
-            fprintf(fp, "%6d %s,", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB");
-            std::vector<double> results = ram_speed_mt_list(size_in_kilo_byte, RAM_SPEED_MODE_WRITE, check_logical_cores);
+        for (double i_size = (chek_ram_only) ? 27 : 12; i_size <= 27; i_size += step(i_size)) {
+            if (i_size >= sizeof(size_t) * 8) {
+                break;
+            }
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            const bool overMB = false; //check_size >= 1024 * 1024;
+            fprintf(fp, "%6d %s,", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB");
+            std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_WRITE, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", (overMB) ? size_in_kilo_byte >> 10 : size_in_kilo_byte, (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                fprintf(stderr, "%6d %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
             fprintf(fp, "\n");
         }
