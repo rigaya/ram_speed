@@ -78,7 +78,7 @@ typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_wk) {
     const int TEST_COUNT = 31;
     size_t check_size_bytes = align_size(thread_prm->check_size_bytes);
-    const size_t test_bytes   = std::max(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 4096 : 2048) * 1024 * thread_prm->physical_cores, check_size_bytes);
+    const size_t test_bytes   = std::max<size_t>(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 4096 : 2048) * 1024 * thread_prm->physical_cores, check_size_bytes);
     const size_t warmup_bytes = test_bytes * 2;
     uint8_t *ptr = (uint8_t *)_aligned_malloc(check_size_bytes, 64);
     for (size_t i = 0; i < check_size_bytes; i++)
@@ -93,7 +93,7 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     };
 
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
-    ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(32 * warmup_bytes / check_size_bytes)));
+    ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(std::min<size_t>(64 * warmup_bytes, 16 * 1024 * 1024) / check_size_bytes)));
 
     thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
     auto check_bit_expected = thread_wk->check_bit_all;
