@@ -207,7 +207,7 @@ std::vector<double> ram_speed_mt_list(size_t check_size, int mode, bool logical_
 }
 
 double step(double d) {
-    if (d < 18.0) return 1.0; //256KB
+    if (d < 18.0) return 0.5; //256KB
     return 0.25;
 }
 
@@ -226,15 +226,19 @@ int main(int argc, char **argv) {
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
+        cpu_info_t cpu_info;
+        get_cpu_info(&cpu_info);
+
+        const double max_size = std::log2((double)(cpu_info.physical_cores * 32 * 1024 * 1024));
         fprintf(fp, "%s\n", mes);
         fprintf(fp, "read\n");
-        for (double i_size = (chek_ram_only) ? 27 : 12; i_size <= 27; i_size += step(i_size)) {
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
                 break;
             }
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
-            fprintf(fp, "%6d %s,", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB");
+            fprintf(fp, "%6d,", check_size >> 10);
             std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_READ, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
@@ -244,13 +248,13 @@ int main(int argc, char **argv) {
         }
         fprintf(fp, "\n");
         fprintf(fp, "write\n");
-        for (double i_size = (chek_ram_only) ? 27 : 12; i_size <= 27; i_size += step(i_size)) {
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
                 break;
             }
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             const bool overMB = false; //check_size >= 1024 * 1024;
-            fprintf(fp, "%6d %s,", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB");
+            fprintf(fp, "%6d,", check_size >> 10);
             std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_WRITE, check_logical_cores);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp, "%6.1f,", results[i] / 1024.0);
