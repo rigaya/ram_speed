@@ -126,10 +126,11 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
 }
 
 int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
+    int thread_id = (thread_index % cpu_info.physical_cores) * (cpu_info.logical_cores / cpu_info.physical_cores) + (int)(thread_index / cpu_info.physical_cores);;
 #if defined(_WIN32) || defined(_WIN64)
-    return (thread_index % cpu_info.physical_cores) * (cpu_info.logical_cores / cpu_info.physical_cores) + (int)(thread_index / cpu_info.physical_cores);
+    return thread_id;
 #else
-    return thread_index;
+    return cpu_info.proc_list[thread_id].processor_id;
 #endif
 }
 
