@@ -76,7 +76,7 @@ read_sse:
 
         dec esi
         jnz .OUTER_LOOP
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
@@ -136,7 +136,7 @@ read_avx:
         jnz .OUTER_LOOP
 
         vzeroupper
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
@@ -195,7 +195,7 @@ read_avx512:
         jnz .OUTER_LOOP
 
         vzeroupper
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
@@ -235,13 +235,13 @@ write_sse:
         add rdx, 64
         mov ecx, eax
     .INNER_LOOP:
-        movaps [rbx],    xmm0 
-        movaps [rbx+16], xmm0 
+        movaps [rbx],    xmm0
+        movaps [rbx+16], xmm0
         movaps [rbx+32], xmm0
         movaps [rbx+48], xmm0
         add rbx, rdi
-        movaps [rdx],    xmm0 
-        movaps [rdx+16], xmm0 
+        movaps [rdx],    xmm0
+        movaps [rdx+16], xmm0
         movaps [rdx+32], xmm0
         movaps [rdx+48], xmm0
         add rdx, rdi
@@ -250,7 +250,7 @@ write_sse:
 
         dec esi
         jnz .OUTER_LOOP
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
@@ -292,13 +292,13 @@ write_avx:
         add rdx, 128
         mov ecx, eax
     .INNER_LOOP:
-        vmovaps [rbx],    ymm0 
-        vmovaps [rbx+32], ymm0 
+        vmovaps [rbx],    ymm0
+        vmovaps [rbx+32], ymm0
         vmovaps [rbx+64], ymm0
         vmovaps [rbx+96], ymm0
         add rbx, rdi
-        vmovaps [rdx],    ymm0 
-        vmovaps [rdx+32], ymm0 
+        vmovaps [rdx],    ymm0
+        vmovaps [rdx+32], ymm0
         vmovaps [rdx+64], ymm0
         vmovaps [rdx+96], ymm0
         add rdx, rdi
@@ -309,7 +309,7 @@ write_avx:
         jnz .OUTER_LOOP
 
         vzeroupper
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
@@ -349,13 +349,13 @@ write_avx512:
         add rdx, 256
         mov ecx, eax
     .INNER_LOOP:
-        vmovdqa32 [rbx],     zmm0 
-        vmovdqa32 [rbx+64],  zmm0 
+        vmovdqa32 [rbx],     zmm0
+        vmovdqa32 [rbx+64],  zmm0
         vmovdqa32 [rbx+128], zmm0
         vmovdqa32 [rbx+192], zmm0
         add rbx, rdi
-        vmovdqa32 [rdx],     zmm0 
-        vmovdqa32 [rdx+64],  zmm0 
+        vmovdqa32 [rdx],     zmm0
+        vmovdqa32 [rdx+64],  zmm0
         vmovdqa32 [rdx+128], zmm0
         vmovdqa32 [rdx+192], zmm0
         add rdx, rdi
@@ -366,11 +366,31 @@ write_avx512:
         jnz .OUTER_LOOP
 
         vzeroupper
-        
+
 %ifndef LINUX
         pop rsi
         pop rdi
 %endif
         pop rbx
+
+        ret
+
+global ram_latency_test
+
+;void __stdcall ram_latency_test(uint8_t *src) (
+;  [rcx] PIXEL_YC       *src
+;)
+
+ram_latency_test:
+
+%ifdef LINUX
+        mov rcx, rdi
+%endif
+        xor rdx, rdx
+        align 16
+    .LOOP:
+        mov edx, [rcx + rdx*4]
+        test edx, edx
+        jg .LOOP
 
         ret

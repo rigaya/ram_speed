@@ -82,7 +82,7 @@ global _read_sse
 
 
 
-        
+
 global _read_avx
 
 ;void __stdcall read_avx(uint8_t *src, uint32_t size, uint32_t count_n) (
@@ -215,13 +215,13 @@ global _write_sse
         add edx, 64
         mov ecx, ebp
     .INNER_LOOP:
-        movaps [ebx],    xmm0 
-        movaps [ebx+16], xmm0 
+        movaps [ebx],    xmm0
+        movaps [ebx+16], xmm0
         movaps [ebx+32], xmm0
         movaps [ebx+48], xmm0
         add ebx, edi
-        movaps [edx],    xmm0 
-        movaps [edx+16], xmm0 
+        movaps [edx],    xmm0
+        movaps [edx+16], xmm0
         movaps [edx+32], xmm0
         movaps [edx+48], xmm0
         add edx, edi
@@ -267,13 +267,13 @@ _write_avx:
         add edx, 128
         mov ecx, ebp
     .INNER_LOOP:
-        vmovaps [ebx],    ymm0 
-        vmovaps [ebx+32], ymm0 
+        vmovaps [ebx],    ymm0
+        vmovaps [ebx+32], ymm0
         vmovaps [ebx+64], ymm0
         vmovaps [eax+96], ymm0
         add ebx, edi
-        vmovaps [edx],    ymm0 
-        vmovaps [edx+32], ymm0 
+        vmovaps [edx],    ymm0
+        vmovaps [edx+32], ymm0
         vmovaps [edx+64], ymm0
         vmovaps [edx+96], ymm0
         add edx, edi
@@ -319,13 +319,13 @@ _write_avx512:
         add edx, 256
         mov ecx, ebp
     .INNER_LOOP:
-        vmovdqa32 [ebx],     zmm0 
-        vmovdqa32 [ebx+64],  zmm0 
+        vmovdqa32 [ebx],     zmm0
+        vmovdqa32 [ebx+64],  zmm0
         vmovdqa32 [ebx+128], zmm0
         vmovdqa32 [eax+192], zmm0
         add ebx, edi
-        vmovdqa32 [edx],     zmm0 
-        vmovdqa32 [edx+64],  zmm0 
+        vmovdqa32 [edx],     zmm0
+        vmovdqa32 [edx+64],  zmm0
         vmovdqa32 [edx+128], zmm0
         vmovdqa32 [edx+192], zmm0
         add edx, edi
@@ -341,5 +341,25 @@ _write_avx512:
         pop esi
         pop edi
         pop ebp
+
+        ret
+
+
+
+global _ram_latency_test
+
+;void __stdcall ram_latency_test(void *src) (
+;  [esp+04] void       *src
+;)
+
+    _ram_latency_test:
+        mov ecx, [esp+00+04]; src
+        xor edx, edx
+        align 16
+    .LOOP:
+        mov edx, [ecx + edx*4]
+        test edx, edx
+        jg .LOOP
+
 
         ret

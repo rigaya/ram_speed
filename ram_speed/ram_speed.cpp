@@ -33,7 +33,9 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
+#include <random>
 #include <cmath>
+#include <array>
 
 #include "cpu_info.h"
 #include "simd_util.h"
@@ -59,6 +61,9 @@ typedef struct {
     size_t check_bit_all;
 } RAM_SPEED_THREAD_WAKE;
 
+
+typedef uint32_t index_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,6 +73,7 @@ extern "C" {
     extern void write_sse(uint8_t *dst, uint32_t size, uint32_t count_n);
     extern void write_avx(uint8_t *dst, uint32_t size, uint32_t count_n);
     extern void write_avx512(uint8_t *dst, uint32_t size, uint32_t count_n);
+    extern void ram_latency_test(index_t *src);
 #ifdef __cplusplus
 }
 #endif
@@ -207,8 +213,83 @@ std::vector<double> ram_speed_mt_list(size_t check_size, int mode, bool logical_
     return results;
 }
 
+enum RamLatencyTest {
+    RL_TEST_CL_FORWARD,
+    RL_TEST_RANDOM,
+};
+
+double ram_latency(RamLatencyTest test, size_t size, int loop_count) {
+    const int TEST_COUNT = 31;
+    double result[TEST_COUNT];
+    const int elems = (size + 3) / 4;
+    std::unique_ptr<index_t, decltype(&_aligned_free)> buffer((index_t *)_aligned_malloc(elems * sizeof(index_t), 64), _aligned_free);
+    auto buf_ptr = buffer.get();
+    memset(buf_ptr, 0, elems * sizeof(index_t));
+
+    if (test == RL_TEST_CL_FORWARD) {
+        const int step_size = 128 / sizeof(index_t);
+        const int step_elems = (elems + step_size - 1) / step_size;
+        index_t prev_idx = 0;
+        for (index_t j = 0; j < step_size; j++) {
+            for (index_t i = 0; i < step_elems; i++) {
+                index_t idx = i * step_size + j;
+                if (idx != 0 && idx < elems) {
+                    buf_ptr[prev_idx] = idx;
+                    prev_idx = idx;
+                }
+            }
+        }
+    } else if (test == RL_TEST_RANDOM) {
+        std::vector<index_t> indexes;
+        for (int i = 1; i < elems; i++) {
+            indexes.push_back(i);
+        }
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        index_t prev_idx = 0;
+        uint64_t used_count = 0;
+        while ((int64_t)indexes.size() - (int64_t)used_count > 0) {
+            std::uniform_int_distribution<index_t> dist(0, indexes.size()-1);
+            index_t idx = 0;
+            for (int itry = 0; itry < 8; itry++) {
+                idx = dist(mt);
+                while (indexes[idx] == 0) {
+                    idx = dist(mt);
+                }
+                if (std::abs(((int64_t)prev_idx - indexes[idx])) >= 128 / sizeof(index_t)) break;
+            }
+            buf_ptr[prev_idx] = indexes[idx];
+            prev_idx = indexes[idx];
+            indexes[idx] = 0;
+            used_count++;
+            if (used_count * 2 > indexes.size()) {
+                std::vector<index_t> temp;
+                for (auto i : indexes) {
+                    if (i > 0) {
+                        temp.push_back(i);
+                    }
+                }
+                indexes = temp;
+                used_count = 0;
+            }
+        }
+    }
+
+    for (int i = 0; i < TEST_COUNT; i++) {
+        auto start = std::chrono::high_resolution_clock::now();
+        for (int iloop = 0; iloop < loop_count; iloop++) {
+            ram_latency_test(buf_ptr);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        result[i] = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - start).count() / (double)(elems * loop_count);
+    }
+    std::sort(result, result + TEST_COUNT);
+    const auto time = result[TEST_COUNT / 2];
+    return time;
+}
+
 double step(double d) {
-    if (d < 18.0) return 0.5; //256KB
+    //if (d < 18.0) return 0.5; //256KB
     return 0.25;
 }
 
@@ -232,6 +313,20 @@ int main(int argc, char **argv) {
 
         const double max_size = std::log2((double)(cpu_info.physical_cores * 32 * 1024 * 1024));
         fprintf(fp, "%s\n", mes);
+        fprintf(fp, "latency\n");
+        std::array<RamLatencyTest, 2> latency_tests = { RL_TEST_CL_FORWARD, RL_TEST_RANDOM };
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            fprintf(fp, "%6d", check_size >> 10);
+            fprintf(stderr, "%6d", check_size >> 10);
+            for (auto test : latency_tests) {
+                double latency = ram_latency(test, check_size, std::max<size_t>(1, 2 * 1024 * 1024 / check_size));
+                fprintf(fp, ", %.2f", latency);
+                fprintf(stderr, ", %.2f", latency);
+            }
+            fprintf(fp, "\n");
+            fprintf(stderr, "\n");
+        }
         fprintf(fp, "read\n");
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
