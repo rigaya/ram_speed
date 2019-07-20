@@ -66,6 +66,6 @@ int inline getCPUInfo(TCHAR(&buffer)[size]) {
 }
 
 double getCPUDefaultClock();
-double getCPUMaxTurboClock(unsigned int num_thread);
+double getCPUMaxTurboClock();
 
 #endif //_CPU_INFO_H_
