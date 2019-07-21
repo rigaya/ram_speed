@@ -214,19 +214,27 @@ std::vector<double> ram_speed_mt_list(size_t check_size, int mode, bool logical_
 }
 
 enum RamLatencyTest {
+    RL_TEST_SEQUENTIAL,
     RL_TEST_CL_FORWARD,
-    RL_TEST_RANDOM,
+    RL_TEST_CL_FORWARD2,
+    RL_TEST_RANDOM_PAGE,
+    RL_TEST_RANDOM_FULL,
 };
 
-double ram_latency(RamLatencyTest test, size_t size, int loop_count) {
-    const int TEST_COUNT = 31;
-    double result[TEST_COUNT];
+double ram_latency(RamLatencyTest test, size_t size, int loop_count, int test_count) {
+    std::vector<double> result(test_count);
     const index_t elems = (index_t)((size + 3) / 4);
     std::unique_ptr<index_t, decltype(&_aligned_free)> buffer((index_t *)_aligned_malloc(elems * sizeof(index_t), 64), _aligned_free);
     auto buf_ptr = buffer.get();
     memset(buf_ptr, 0, elems * sizeof(index_t));
 
-    if (test == RL_TEST_CL_FORWARD) {
+    if (test == RL_TEST_SEQUENTIAL) {
+        index_t prev_idx = 0;
+        for (index_t i = 1; i < elems; i++) {
+            buf_ptr[prev_idx] = i;
+            prev_idx = i;
+        }
+    } else if (test == RL_TEST_CL_FORWARD) {
         const index_t step_size = 128 / sizeof(index_t);
         const index_t step_elems = (elems + step_size - 1) / step_size;
         index_t prev_idx = 0;
@@ -239,7 +247,77 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count) {
                 }
             }
         }
-    } else if (test == RL_TEST_RANDOM) {
+    } else if (test == RL_TEST_CL_FORWARD2) {
+        const index_t cl_size = 64 / sizeof(index_t);
+        const index_t cl_block1 = 16;
+        const index_t cl_block2 = 4096 / (sizeof(index_t) * cl_block1 * cl_size);
+        const index_t page_count = (size + 4095) / 4096;
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::vector<index_t> temp(cl_block1);
+        index_t prev_idx = 0;
+        for (index_t k = 0; k < cl_size; k++) {
+            for (index_t ipage = 0; ipage < page_count; ipage++) {
+                for (index_t j = 0; j < cl_block2; j++) {
+                    for (index_t i = 0; i < cl_block1; i++) {
+                        #define BLOCK_IDX(i, j, k) ((((ipage) * cl_block2 + (j)) * cl_block1 + (i)) * cl_size + (k))
+                        if ((i|j|k) != 0) {
+                            int page_unused = 0;
+                            for (int x = 0; x < cl_block2; x++) {
+                                index_t idx = BLOCK_IDX(i, x, k);
+                                if (idx < elems && buf_ptr[idx] == 0) {
+                                    temp[page_unused] = idx;
+                                    page_unused++;
+                                }
+                            }
+                            if (page_unused > 0) {
+                                std::uniform_int_distribution<index_t> dist(0, page_unused-1);
+                                index_t idx = temp[dist(mt)];
+                                buf_ptr[prev_idx] = idx;
+                                prev_idx = idx;
+                            }
+                        }
+                        #undef BLOCK_IDX
+                    }
+                }
+            }
+        }
+        buf_ptr[prev_idx] = 0;
+    } else if (test == RL_TEST_RANDOM_PAGE) {
+        const index_t page_size = 4096 / sizeof(index_t);
+        const index_t page_counts = (elems + page_size - 1) / page_size;
+        const index_t block_size = 128 / sizeof(index_t);
+        const index_t block_elems = (page_size + block_size - 1) / block_size;
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::vector<index_t> temp(page_counts);
+        #define BLOCK_IDX(i, j, k) ((k)*page_size + (i)*block_size + (j))
+        index_t prev_idx = 0;
+        for (index_t j = 0; j < block_size; j++) {
+            for (index_t k = 0; k < page_counts; k++) {
+                for (index_t i = 0; i < block_elems; i++) {
+                    if ((i|j|k) != 0) {
+                        int page_unused = 0;
+                        for (int x = 0; x < page_counts; x++) {
+                            index_t idx = BLOCK_IDX(i, j, x);
+                            if (idx < elems && buf_ptr[idx] == 0) {
+                                temp[page_unused] = idx;
+                                page_unused++;
+                            }
+                        }
+                        if (page_unused > 0) {
+                            std::uniform_int_distribution<index_t> dist(0, page_unused-1);
+                            index_t idx = temp[dist(mt)];
+                            buf_ptr[prev_idx] = idx;
+                            prev_idx = idx;
+                        }
+                    }
+                }
+            }
+        }
+        buf_ptr[prev_idx] = 0;
+        #undef BLOCK_IDX
+    } else if (test == RL_TEST_RANDOM_FULL) {
         std::vector<index_t> indexes;
         for (index_t i = 1; i < elems; i++) {
             indexes.push_back(i);
@@ -275,7 +353,7 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count) {
         }
     }
 
-    for (int i = 0; i < TEST_COUNT; i++) {
+    for (int i = 0; i < test_count; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         for (int iloop = 0; iloop < loop_count; iloop++) {
             ram_latency_test(buf_ptr);
@@ -283,8 +361,8 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count) {
         auto fin = std::chrono::high_resolution_clock::now();
         result[i] = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - start).count() / (double)(elems * loop_count);
     }
-    std::sort(result, result + TEST_COUNT);
-    const auto time = result[TEST_COUNT / 2];
+    std::sort(result.begin(), result.end());
+    const auto time = result[result.size() / 2];
     return time;
 }
 
@@ -405,12 +483,18 @@ int main(int argc, char **argv) {
 
         const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8u) * 32 * 1024 * 1024));
         print(fp, "\nram latency\n");
-        std::array<RamLatencyTest, 2> latency_tests = { RL_TEST_CL_FORWARD, RL_TEST_RANDOM };
+        std::array<RamLatencyTest, 4> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             print(fp, "%6zd", check_size >> 10);
+            int test_count = 3;
+            if      (check_size <       256 * 1024) test_count = 31;
+            else if (check_size <  1 * 1024 * 1024) test_count = 15;
+            else if (check_size <  2 * 1024 * 1024) test_count =  9;
+            else if (check_size <  4 * 1024 * 1024) test_count =  7;
+            else if (check_size < 16 * 1024 * 1024) test_count =  5;
             for (auto test : latency_tests) {
-                double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)));
+                double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
                 print(fp, ", %.2f", latency);
             }
             print(fp, "\n");
