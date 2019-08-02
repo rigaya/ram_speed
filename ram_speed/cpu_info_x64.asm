@@ -12,7 +12,11 @@ global runl_por
     runl_por:
         push rbx
         push rsi
+%ifdef LINUX
+        mov esi, edi
+%else
         mov esi, ecx
+%endif
         mov r9, rsp
         sub rsp, 16*10
         and rsp, -32

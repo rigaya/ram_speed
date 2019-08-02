@@ -432,7 +432,18 @@ double step(double d) {
     //if (d < 18.0) return 0.5; //256KB
     return 0.125;
 }
-
+#if !(defined(_WIN32) || defined(_WIN64))
+static inline int _vscprintf(const char * format, va_list pargs) {
+    int retval;
+    va_list argcopy;
+    va_copy(argcopy, pargs);
+    retval = vsnprintf(NULL, 0, format, argcopy);
+    va_end(argcopy);
+    return retval;
+}
+#define _vsctprintf _vscprintf
+#define vsprintf_s(buffer, numOfElements, format, argptr) vsprintf(buffer, format, argptr)
+#endif
 
 void print(FILE *fp, const char *format, ...) {
     va_list args;

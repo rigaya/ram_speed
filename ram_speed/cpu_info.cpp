@@ -307,7 +307,6 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 
-#if defined(_WIN32) || defined(_WIN64)
 
 const int TEST_COUNT = 5000;
 
@@ -341,6 +340,7 @@ static double get_tick_per_sec() {
     return tick / second;
 }
 
+#if defined(_WIN32) || defined(_WIN64)
 //rdtscpを使うと0xc0000096例外 (一般ソフトウェア例外)を発する場合があるらしい
 //そこでそれを検出する
 bool check_rdtscp_available() {
@@ -352,6 +352,7 @@ bool check_rdtscp_available() {
     }
     return true;
 }
+#endif //#if defined(_WIN32) || defined(_WIN64)
 
 //__rdtscが定格クロックに基づいた値を返すのを利用して、実際の動作周波数を得る
 //やや時間がかかるので注意
@@ -375,16 +376,17 @@ double getCPUMaxTurboClock() {
     if (0 == (CPUInfo[3] & (1<<27))) {
         return defaultClock;
     }
+#if defined(_WIN32) || defined(_WIN64)
     //例外が発生するなら処理を中断する
     if (!check_rdtscp_available()) {
         return defaultClock;
     }
+#endif //#if defined(_WIN32) || defined(_WIN64)
 
     const double tick_per_clock = get_tick_per_clock();
     const double tick_per_sec = get_tick_per_sec();
     return (tick_per_sec / tick_per_clock) * 1e-9;
 }
-#endif //#if defined(_WIN32) || defined(_WIN64)
 
 double getCPUDefaultClock() {
     return getCPUDefaultClockFromCPUName();
@@ -403,13 +405,11 @@ int getCPUInfo(TCHAR *buffer, size_t nSize) {
             if (noDefaultClockInCPUName) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" @ %.2fGHz"), defaultClock);
             }
-#if defined(_WIN32) || defined(_WIN64)
             double maxFrequency = getCPUMaxTurboClock();
             //大きな違いがなければ、TurboBoostはないものとして表示しない
             if (maxFrequency / defaultClock > 1.01) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [TB: %.2fGHz]"), maxFrequency);
             }
-#endif //#if defined(_WIN32) || defined(_WIN64)
             _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
         }
     }

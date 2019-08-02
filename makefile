@@ -5,7 +5,7 @@ CXX=g++
 AS=nasm
 LD=gcc
 SRCS=ram_speed/ram_speed.cpp ram_speed/cpu_info.cpp ram_speed/simd_util.cpp
-ASMS=ram_speed/ram_speed_x64.asm
+ASMS=ram_speed/ram_speed_x64.asm ram_speed/cpu_info_x64.asm
 #ASMS=ram_speed/ram_speed_x86.asm
 
 CXXFLAGS=-I./ram_speed -std=c++11 -DLINUX -DLINUX64 -m64 -O3 -DNDEBUG=1
