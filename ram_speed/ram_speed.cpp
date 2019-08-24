@@ -384,10 +384,12 @@ void func_inter_core_latency1(inter_core_data *data) {
     auto value = data->s1.load();
     auto start = std::chrono::high_resolution_clock::now();
     while (data->s1 < INTER_CORE_ITER) {
-        while (data->s2 != value) {
+        int new_val;
+        while ((new_val = data->s2) != value) {
             // busy spin
         }
-        value = ++data->s1;
+        value = new_val + 1;
+        data->s1.exchange(value);
     }
     auto fin = std::chrono::high_resolution_clock::now();
     data->abort = true;
@@ -404,7 +406,8 @@ void func_inter_core_latency2(inter_core_data *data) {
         while (value == data->s1) {
             // busy spin
         }
-        value = ++data->s2;
+        value++;
+        data->s2.exchange(value);
     }
 }
 
