@@ -35,7 +35,7 @@
 #include "simd_util.h"
 #include "ram_speed_osdep.h"
 
-static int getCPUName(char *buffer, size_t nSize) {
+int getCPUName(char *buffer, size_t nSize) {
     int CPUInfo[4] = {-1};
     __cpuid(CPUInfo, 0x80000000);
     unsigned int nExIds = CPUInfo[0];

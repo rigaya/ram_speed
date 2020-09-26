@@ -58,6 +58,7 @@ typedef struct {
 
 bool get_cpu_info(cpu_info_t *cpu_info);
 
+int getCPUName(char *buffer, size_t nSize);
 int getCPUInfo(TCHAR *buffer, size_t nSize);
 
 template <size_t size>

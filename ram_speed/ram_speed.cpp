@@ -46,6 +46,15 @@ static inline size_t align_size(size_t i) {
     return (i + 511) & ~511;
 }
 
+std::string str_replace(std::string str, const std::string &from, const std::string &to) {
+    std::string::size_type pos = 0;
+    while (pos = str.find(from, pos), pos != std::string::npos) {
+        str.replace(pos, from.length(), to);
+        pos += to.length();
+    }
+    return str;
+}
+
 typedef struct {
     int mode;
     size_t check_size_bytes;
@@ -471,15 +480,17 @@ int main(int argc, char **argv) {
     }
 
     char mes[256];
-    getCPUInfo(mes, 256);
-    fprintf(stderr, "%s\n", mes);
-    FILE *fp = fopen("result.csv", "w");
+    getCPUName(mes, sizeof(mes));
+    std::string outfilename = "result_" + str_replace(str_replace(str_replace(mes, "@", " "), "  ", " "), " ", "_") + ".csv";
+    FILE *fp = fopen(outfilename.c_str(), "w");
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
+        getCPUInfo(mes, 256);
+        print(fp, mes);
+
         cpu_info_t cpu_info;
         get_cpu_info(&cpu_info);
-
         print(fp, "inter core latency\n");
         for (int j = 0; j < (int)cpu_info.physical_cores; j++) {
             for (int i = 0; i < (int)cpu_info.physical_cores; i++) {
