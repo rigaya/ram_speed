@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <vector>
 #include <numeric>
+#include <map>
 #include <algorithm>
 #include <thread>
 #include <atomic>
@@ -505,10 +506,24 @@ int main(int argc, char **argv) {
             }
             print(fp, "\n");
         }
+        fflush(fp);
 
         const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8u) * 32 * 1024 * 1024));
         print(fp, "\nram latency\n");
-        std::array<RamLatencyTest, 4> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
+        const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
+        const std::map<RamLatencyTest, std::string> latency_tests_name = {
+            { RL_TEST_SEQUENTIAL, "sequantial" },
+            { RL_TEST_CL_FORWARD, "cacheline forward" },
+            { RL_TEST_CL_FORWARD2, "cacheline forward2" },
+            { RL_TEST_RANDOM_PAGE, "page random" },
+            { RL_TEST_RANDOM_FULL, "full random" }
+        };
+        for (auto test : latency_tests) {
+            print(fp, ", %s", latency_tests_name.at(test).c_str());
+        }
+        print(fp, "\n");
+        fflush(fp);
+
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             print(fp, "%6zd", check_size >> 10);
@@ -524,6 +539,8 @@ int main(int argc, char **argv) {
             }
             print(fp, "\n");
         }
+        fflush(fp);
+
         print(fp, "\nread\n");
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
@@ -539,6 +556,8 @@ int main(int argc, char **argv) {
             }
             fprintf(fp, "\n");
         }
+        fflush(fp);
+
         print(fp, "\nwrite\n");
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
