@@ -56,6 +56,34 @@ std::string str_replace(std::string str, const std::string &from, const std::str
     return str;
 }
 
+std::string lstrip(const std::string &string, const char *trim) {
+    auto result = string;
+    auto left = string.find_first_not_of(trim);
+    if (left != std::string::npos) {
+        result = string.substr(left, 0);
+    }
+    return result;
+}
+
+std::string rstrip(const std::string &string, const char *trim) {
+    auto result = string;
+    auto right = string.find_last_not_of(trim);
+    if (right != std::string::npos) {
+        result = string.substr(0, right);
+    }
+    return result;
+}
+
+std::string trim(const std::string &string, const char *trim = " \t\v\r\n") {
+    auto result = string;
+    auto left = string.find_first_not_of(trim);
+    if (left != std::string::npos) {
+        auto right = string.find_last_not_of(trim);
+        result = string.substr(left, right - left + 1);
+    }
+    return result;
+}
+
 typedef struct {
     int mode;
     size_t check_size_bytes;
@@ -482,7 +510,7 @@ int main(int argc, char **argv) {
 
     char mes[256];
     getCPUName(mes, sizeof(mes));
-    std::string outfilename = "result_" + str_replace(str_replace(str_replace(mes, "@", " "), "  ", " "), " ", "_") + ".csv";
+    std::string outfilename = "result_" + str_replace(str_replace(str_replace(trim(mes), "@", " "), "  ", " "), " ", "_") + ".csv";
     FILE *fp = fopen(outfilename.c_str(), "w");
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
