@@ -28,6 +28,8 @@
 #pragma once
 #include <vector>
 
+#define RAM_SPEED_VERSION "0.01"
+
 enum {
     RAM_SPEED_MODE_READ = 0,
     RAM_SPEED_MODE_WRITE = 1,

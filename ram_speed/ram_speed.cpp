@@ -515,6 +515,8 @@ int main(int argc, char **argv) {
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
+        print(fp, "ram_speed %s\n", RAM_SPEED_VERSION);
+
         getCPUInfo(mes, 256);
         print(fp, mes);
 
