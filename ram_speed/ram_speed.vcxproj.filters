@@ -24,6 +24,9 @@
     <ClCompile Include="simd_util.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="ram_speed_util.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ram_speed.h">
@@ -35,7 +38,13 @@
     <ClInclude Include="simd_util.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ram_speed_osdep.h">
+    <ClInclude Include="rgy_osdep.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="rgy_tchar.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ram_speed_util.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -46,13 +55,11 @@
     <CustomBuild Include="ram_speed_x86.asm">
       <Filter>ソース ファイル</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpu_info_x64.asm">
+    <CustomBuild Include="cpu_info_x64.asm">
       <Filter>ソース ファイル</Filter>
-    </None>
-    <None Include="cpu_info_x86.asm">
+    </CustomBuild>
+    <CustomBuild Include="cpu_info_x86.asm">
       <Filter>ソース ファイル</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

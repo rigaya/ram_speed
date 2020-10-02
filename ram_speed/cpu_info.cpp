@@ -33,7 +33,8 @@
 #include <chrono>
 #include "cpu_info.h"
 #include "simd_util.h"
-#include "ram_speed_osdep.h"
+#include "rgy_osdep.h"
+#include "rgy_tchar.h"
 
 int getCPUName(char *buffer, size_t nSize) {
     int CPUInfo[4] = {-1};

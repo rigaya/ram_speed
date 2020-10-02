@@ -25,7 +25,7 @@
 //
 // --------------------------------------------------------------------------------------------
 
-#define _CRT_SECURE_NO_WARNINGS
+#include "rgy_osdep.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <vector>
@@ -41,47 +41,10 @@
 #include "cpu_info.h"
 #include "simd_util.h"
 #include "ram_speed.h"
-#include "ram_speed_osdep.h"
+#include "ram_speed_util.h"
 
 static inline size_t align_size(size_t i) {
     return (i + 511) & ~511;
-}
-
-std::string str_replace(std::string str, const std::string &from, const std::string &to) {
-    std::string::size_type pos = 0;
-    while (pos = str.find(from, pos), pos != std::string::npos) {
-        str.replace(pos, from.length(), to);
-        pos += to.length();
-    }
-    return str;
-}
-
-std::string lstrip(const std::string &string, const char *trim) {
-    auto result = string;
-    auto left = string.find_first_not_of(trim);
-    if (left != std::string::npos) {
-        result = string.substr(left, 0);
-    }
-    return result;
-}
-
-std::string rstrip(const std::string &string, const char *trim) {
-    auto result = string;
-    auto right = string.find_last_not_of(trim);
-    if (right != std::string::npos) {
-        result = string.substr(0, right);
-    }
-    return result;
-}
-
-std::string trim(const std::string &string, const char *trim = " \t\v\r\n") {
-    auto result = string;
-    auto left = string.find_first_not_of(trim);
-    if (left != std::string::npos) {
-        auto right = string.find_last_not_of(trim);
-        result = string.substr(left, right - left + 1);
-    }
-    return result;
 }
 
 typedef struct {
@@ -500,6 +463,23 @@ void print(FILE *fp, const char *format, ...) {
     va_end(args);
 }
 
+std::string getOutFilename() {
+    char mes[256];
+    getCPUName(mes, sizeof(mes));
+
+    std::string outfilename = "result_" + str_replace(trim(mes), "@", " ");
+    {
+        auto outfilename_org = outfilename;
+        outfilename = str_replace(outfilename, "  ", " ");
+        while (outfilename != outfilename_org) {
+            outfilename_org = outfilename;
+            outfilename = str_replace(outfilename, "  ", " ");
+        }
+    }
+    outfilename = str_replace(outfilename, " ", "_") + ".csv";
+    return outfilename;
+}
+
 int main(int argc, char **argv) {
     bool check_logical_cores = false;
     bool chek_ram_only = false;
@@ -508,17 +488,12 @@ int main(int argc, char **argv) {
         chek_ram_only |= (0 == _stricmp(argv[1], "-r"));
     }
 
-    char mes[256];
-    getCPUName(mes, sizeof(mes));
-    std::string outfilename = "result_" + str_replace(str_replace(str_replace(trim(mes), "@", " "), "  ", " "), " ", "_") + ".csv";
-    FILE *fp = fopen(outfilename.c_str(), "w");
+    FILE *fp = fopen(getOutFilename().c_str(), "w");
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
-        print(fp, "ram_speed %s\n", RAM_SPEED_VERSION);
-
-        getCPUInfo(mes, 256);
-        print(fp, mes);
+        print(fp, "ram_speed %s\n\n", RAM_SPEED_VERSION);
+        print(fp, "%s\n", getEnviromentInfo().c_str());
 
         cpu_info_t cpu_info;
         get_cpu_info(&cpu_info);

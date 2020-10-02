@@ -29,7 +29,8 @@
 #define _CPU_INFO_H_
 
 #include <stdint.h>
-#include "ram_speed_osdep.h"
+#include "rgy_osdep.h"
+#include "rgy_tchar.h"
 
 typedef struct cache_info_t {
     uint16_t count;
