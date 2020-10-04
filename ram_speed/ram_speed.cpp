@@ -558,12 +558,62 @@ std::string getOutFilename() {
 int main(int argc, char **argv) {
     bool check_logical_cores = false;
     bool chek_ram_only = false;
+    bool check_latency_mem = true;
+    bool check_latency_intercore = true;
+    bool check_bandwidth_read = true;
+    bool check_bandwidth_write = true;
+    std::string outfilename;
     for (int i = 1; i < argc; i++) {
-        check_logical_cores |= (0 == _stricmp(argv[1], "-l"));
-        chek_ram_only |= (0 == _stricmp(argv[1], "-r"));
+        if (argv[i] == "--output" || argv[i] == "-o") {
+            outfilename = argv[i+1];
+            i++;
+            continue;
+        }
+        if (argv[i] == "--logical-cores") {
+            check_logical_cores = true;
+            continue;
+        }
+        if (argv[i] == "--physical-cores") {
+            check_logical_cores = false;
+            continue;
+        }
+        if (argv[i] == "--ram-only") {
+            chek_ram_only = true;
+            check_latency_intercore = false;
+            continue;
+        }
+        if (argv[i] == "--no-latency") {
+            check_latency_intercore = false;
+            check_latency_mem = false;
+            continue;
+        }
+        if (argv[i] == "--no-latency-intercore") {
+            check_latency_intercore = false;
+            continue;
+        }
+        if (argv[i] == "--no-latency-mem") {
+            check_latency_mem = false;
+            continue;
+        }
+        if (argv[i] == "--no-bandwidth") {
+            check_bandwidth_read = false;
+            check_bandwidth_write = false;
+            continue;
+        }
+        if (argv[i] == "--no-bandwidth-read") {
+            check_bandwidth_read = false;
+            continue;
+        }
+        if (argv[i] == "--no-bandwidth-write") {
+            check_bandwidth_write = false;
+            continue;
+        }
+    }
+    if (outfilename.length() == 0) {
+        outfilename = getOutFilename();
     }
 
-    FILE *fp = fopen(getOutFilename().c_str(), "w");
+    FILE *fp = fopen(outfilename.c_str(), "w");
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
@@ -572,88 +622,96 @@ int main(int argc, char **argv) {
 
         cpu_info_t cpu_info;
         get_cpu_info(&cpu_info);
-        print(fp, "inter core latency\n");
-        for (int j = 0; j < (int)cpu_info.physical_cores; j++) {
-            for (int i = 0; i < (int)cpu_info.physical_cores; i++) {
-                if (i == j && cpu_info.physical_cores == cpu_info.logical_cores) {
-                    print(fp, ",       ");
-                } else {
-                    int ithread = ram_speed_thread_id(i, cpu_info);
-                    int jthread = (i == j) ? ram_speed_thread_id(i + cpu_info.physical_cores, cpu_info) : ram_speed_thread_id(j, cpu_info);
-                    double result = inter_core_latency(ithread, jthread);
-                    print(fp, "%s %7.2f", (i) ? "," : "", result);
+        if (check_latency_intercore) {
+            print(fp, "inter core latency\n");
+            for (int j = 0; j < (int)cpu_info.physical_cores; j++) {
+                for (int i = 0; i < (int)cpu_info.physical_cores; i++) {
+                    if (i == j && cpu_info.physical_cores == cpu_info.logical_cores) {
+                        print(fp, ",       ");
+                    } else {
+                        int ithread = ram_speed_thread_id(i, cpu_info);
+                        int jthread = (i == j) ? ram_speed_thread_id(i + cpu_info.physical_cores, cpu_info) : ram_speed_thread_id(j, cpu_info);
+                        double result = inter_core_latency(ithread, jthread);
+                        print(fp, "%s %7.2f", (i) ? "," : "", result);
+                    }
                 }
+                print(fp, "\n");
             }
-            print(fp, "\n");
+            fflush(fp);
         }
-        fflush(fp);
 
         const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8u) * 32 * 1024 * 1024));
-        print(fp, "\nram latency\n");
-        const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
-        const std::map<RamLatencyTest, std::string> latency_tests_name = {
-            { RL_TEST_SEQUENTIAL, "sequantial" },
-            { RL_TEST_CL_FORWARD, "cacheline forward" },
-            { RL_TEST_CL_FORWARD2, "cacheline forward2" },
-            { RL_TEST_RANDOM_PAGE, "page random" },
-            { RL_TEST_RANDOM_FULL, "full random" }
-        };
-        for (auto test : latency_tests) {
-            print(fp, ", %s", latency_tests_name.at(test).c_str());
-        }
-        print(fp, "\n");
-        fflush(fp);
-
-        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-            print(fp, "%6zd", check_size >> 10);
-            int test_count = 3;
-            if      (check_size <       256 * 1024) test_count = 31;
-            else if (check_size <  1 * 1024 * 1024) test_count = 15;
-            else if (check_size <  2 * 1024 * 1024) test_count =  9;
-            else if (check_size <  4 * 1024 * 1024) test_count =  7;
-            else if (check_size < 16 * 1024 * 1024) test_count =  5;
+        if (check_latency_mem) {
+            print(fp, "\nram latency\n");
+            const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
+            const std::map<RamLatencyTest, std::string> latency_tests_name = {
+                { RL_TEST_SEQUENTIAL, "sequantial" },
+                { RL_TEST_CL_FORWARD, "cacheline forward" },
+                { RL_TEST_CL_FORWARD2, "cacheline forward2" },
+                { RL_TEST_RANDOM_PAGE, "page random" },
+                { RL_TEST_RANDOM_FULL, "full random" }
+            };
             for (auto test : latency_tests) {
-                double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
-                print(fp, ", %.2f", latency);
+                print(fp, ", %s", latency_tests_name.at(test).c_str());
             }
             print(fp, "\n");
-        }
-        fflush(fp);
+            fflush(fp);
 
-        print(fp, "\nread\n");
-        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-            if (i_size >= sizeof(size_t) * 8) {
-                break;
+            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+                print(fp, "%6zd", check_size >> 10);
+                int test_count = 3;
+                if      (check_size <       256 * 1024) test_count = 31;
+                else if (check_size <  1 * 1024 * 1024) test_count = 15;
+                else if (check_size <  2 * 1024 * 1024) test_count =  9;
+                else if (check_size <  4 * 1024 * 1024) test_count =  7;
+                else if (check_size < 16 * 1024 * 1024) test_count =  5;
+                for (auto test : latency_tests) {
+                    double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
+                    print(fp, ", %.2f", latency);
+                }
+                print(fp, "\n");
             }
-            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-            const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
-            fprintf(fp, "%6zd,", check_size >> 10);
-            std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_READ, check_logical_cores);
-            for (uint32_t i = 0; i < results.size(); i++) {
-                fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
-            }
-            fprintf(fp, "\n");
+            fflush(fp);
         }
-        fflush(fp);
 
-        print(fp, "\nwrite\n");
-        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-            if (i_size >= sizeof(size_t) * 8) {
-                break;
+        if (check_bandwidth_read) {
+            print(fp, "\nread\n");
+            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+                if (i_size >= sizeof(size_t) * 8) {
+                    break;
+                }
+                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+                const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
+                fprintf(fp, "%6zd,", check_size >> 10);
+                std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_READ, check_logical_cores);
+                for (uint32_t i = 0; i < results.size(); i++) {
+                    fprintf(fp, "%6.1f,", results[i] / 1024.0);
+                    fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                }
+                fprintf(fp, "\n");
             }
-            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-            const bool overMB = false; //check_size >= 1024 * 1024;
-            fprintf(fp, "%6zd,", check_size >> 10);
-            std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_WRITE, check_logical_cores);
-            for (uint32_t i = 0; i < results.size(); i++) {
-                fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
-            }
-            fprintf(fp, "\n");
+            fflush(fp);
         }
-        fclose(fp);
+
+        if (check_bandwidth_write) {
+            print(fp, "\nwrite\n");
+            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+                if (i_size >= sizeof(size_t) * 8) {
+                    break;
+                }
+                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+                const bool overMB = false; //check_size >= 1024 * 1024;
+                fprintf(fp, "%6zd,", check_size >> 10);
+                std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_WRITE, check_logical_cores);
+                for (uint32_t i = 0; i < results.size(); i++) {
+                    fprintf(fp, "%6.1f,", results[i] / 1024.0);
+                    fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                }
+                fprintf(fp, "\n");
+            }
+            fclose(fp);
+        }
     }
 }
 
