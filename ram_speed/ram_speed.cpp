@@ -79,6 +79,12 @@ extern "C" {
 }
 #endif
 
+//RGY_NOINLINE
+//void ram_latency_test(volatile index_t *src) {
+//    size_t idx = src[0];
+//    while (idx > 0)
+//        idx = *(volatile index_t *)(src + idx);
+//}
 
 typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
@@ -436,18 +442,6 @@ double step(double d) {
     //if (d < 18.0) return 0.5; //256KB
     return 0.125;
 }
-#if !(defined(_WIN32) || defined(_WIN64))
-static inline int _vscprintf(const char * format, va_list pargs) {
-    int retval;
-    va_list argcopy;
-    va_copy(argcopy, pargs);
-    retval = vsnprintf(NULL, 0, format, argcopy);
-    va_end(argcopy);
-    return retval;
-}
-#define _vsctprintf _vscprintf
-#define vsprintf_s(buffer, numOfElements, format, argptr) vsprintf(buffer, format, argptr)
-#endif
 
 void print(FILE *fp, const char *format, ...) {
     va_list args;
