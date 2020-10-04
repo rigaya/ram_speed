@@ -14,6 +14,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
+ram_speed64
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
 !packages/*/build/
@@ -48,6 +49,7 @@ build/
 *.lst
 *.opendb
 *.VC.db
+*.vscode
 
 # Visual C++ cache files
 .vs/
