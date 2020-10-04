@@ -555,6 +555,29 @@ std::string getOutFilename() {
     return outfilename;
 }
 
+std::string printVersion() {
+    return std::string("ram_speed " RAM_SPEED_VERSION " (asm: ") + std::string(ENABLE_ASM ? "on" : "off") + ")";
+}
+
+std::string printHelp() {
+    std::string str = printVersion() + "\n\n";
+    str += "-o, --output     output file name\n";
+    str += "                   default: result_<CPU name>.csv\n";
+    str += "-v, --version    print version\n";
+    str += "-h, --help       print help\n";
+    str += "\n";
+    str += "    --mem-only             check ram only\n";
+    str += "\n";
+    str += "    --no-latency           disable latency tests\n";
+    str += "    --no-latency-intercore disable intercore latency test\n";
+    str += "    --no-latency-mem       disable memory latency test\n";
+    str += "\n";
+    str += "    --no-bandwidth         disable bandwidth tests\n";
+    str += "    --no-bandwidth-read    disable bandwidth read test\n";
+    str += "    --no-bandwidth-write   disable bandwidth write test\n";
+    return str;
+}
+
 int main(int argc, char **argv) {
     bool check_logical_cores = false;
     bool chek_ram_only = false;
@@ -564,47 +587,55 @@ int main(int argc, char **argv) {
     bool check_bandwidth_write = true;
     std::string outfilename;
     for (int i = 1; i < argc; i++) {
-        if (argv[i] == "--output" || argv[i] == "-o") {
+        if (std::string(argv[i]) == "--output" || std::string(argv[i]) == "-o") {
             outfilename = argv[i+1];
             i++;
             continue;
         }
-        if (argv[i] == "--logical-cores") {
+        if (std::string(argv[i]) == "--version" || std::string(argv[i]) == "-v") {
+            printf("%s\n", printVersion().c_str());
+            exit(0);
+        }
+        if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
+            printf("%s\n", printHelp().c_str());
+            exit(0);
+        }
+        if (std::string(argv[i]) == "--logical-cores") {
             check_logical_cores = true;
             continue;
         }
-        if (argv[i] == "--physical-cores") {
+        if (std::string(argv[i]) == "--physical-cores") {
             check_logical_cores = false;
             continue;
         }
-        if (argv[i] == "--ram-only") {
+        if (std::string(argv[i]) == "--mem-only") {
             chek_ram_only = true;
             check_latency_intercore = false;
             continue;
         }
-        if (argv[i] == "--no-latency") {
+        if (std::string(argv[i]) == "--no-latency") {
             check_latency_intercore = false;
             check_latency_mem = false;
             continue;
         }
-        if (argv[i] == "--no-latency-intercore") {
+        if (std::string(argv[i]) == "--no-latency-intercore") {
             check_latency_intercore = false;
             continue;
         }
-        if (argv[i] == "--no-latency-mem") {
+        if (std::string(argv[i]) == "--no-latency-mem") {
             check_latency_mem = false;
             continue;
         }
-        if (argv[i] == "--no-bandwidth") {
+        if (std::string(argv[i]) == "--no-bandwidth") {
             check_bandwidth_read = false;
             check_bandwidth_write = false;
             continue;
         }
-        if (argv[i] == "--no-bandwidth-read") {
+        if (std::string(argv[i]) == "--no-bandwidth-read") {
             check_bandwidth_read = false;
             continue;
         }
-        if (argv[i] == "--no-bandwidth-write") {
+        if (std::string(argv[i]) == "--no-bandwidth-write") {
             check_bandwidth_write = false;
             continue;
         }
@@ -617,7 +648,7 @@ int main(int argc, char **argv) {
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
     } else {
-        print(fp, "ram_speed %s\n\n", RAM_SPEED_VERSION);
+        print(fp, "%s\n\n", printVersion().c_str());
         print(fp, "%s\n", getEnviromentInfo().c_str());
 
         cpu_info_t cpu_info;
