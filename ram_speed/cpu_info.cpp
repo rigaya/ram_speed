@@ -38,6 +38,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <intrin.h>
 #endif
+#include "ram_speed_util.h"
 
 int getCPUName(char *buffer, size_t nSize) {
     int CPUInfo[4] = {-1};
@@ -212,39 +213,6 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 #else //#if defined(_WIN32) || defined(_WIN64)
 #include <iostream>
 #include <fstream>
-
-std::string trim(const std::string& string, const char* trim = " \t\v\r\n") {
-    auto result = string;
-    auto left = string.find_first_not_of(trim);
-    if (left != std::string::npos) {
-        auto right = string.find_last_not_of(trim);
-        result = string.substr(left, right - left + 1);
-    }
-    return result;
-}
-
-std::vector<std::string> split(const std::string &str, const std::string &delim, bool bTrim = false) {
-    std::vector<std::string> res;
-    size_t current = 0, found, delimlen = delim.size();
-    while (std::string::npos != (found = str.find(delim, current))) {
-        auto segment = std::string(str, current, found - current);
-        if (bTrim) {
-            segment = trim(segment);
-        }
-        if (!bTrim || segment.length()) {
-            res.push_back(segment);
-        }
-        current = found + delimlen;
-    }
-    auto segment = std::string(str, current, str.size() - current);
-    if (bTrim) {
-        segment = trim(segment);
-    }
-    if (!bTrim || segment.length()) {
-        res.push_back(std::string(segment.c_str()));
-    }
-    return res;
-}
 
 bool get_cpu_info(cpu_info_t *cpu_info) {
     memset(cpu_info, 0, sizeof(cpu_info[0]));

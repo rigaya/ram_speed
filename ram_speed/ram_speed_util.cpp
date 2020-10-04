@@ -41,6 +41,7 @@
 #include "ram_speed_util.h"
 #include "cpu_info.h"
 #include "rgy_osdep.h"
+#include "rgy_codepage.h"
 #include "ram_speed.h"
 
 #pragma warning (push)
