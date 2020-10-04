@@ -65,26 +65,101 @@ typedef struct {
 
 typedef uint32_t index_t;
 
+#if ENABLE_ASM
 #ifdef __cplusplus
 extern "C" {
 #endif
-    extern void read_sse(uint8_t *src, uint32_t size, uint32_t count_n);
-    extern void read_avx(uint8_t *src, uint32_t size, uint32_t count_n);
-    extern void read_avx512(uint8_t *src, uint32_t size, uint32_t count_n);
-    extern void write_sse(uint8_t *dst, uint32_t size, uint32_t count_n);
-    extern void write_avx(uint8_t *dst, uint32_t size, uint32_t count_n);
-    extern void write_avx512(uint8_t *dst, uint32_t size, uint32_t count_n);
-    extern void ram_latency_test(index_t *src);
+        extern void read_sse(uint8_t *src, uint32_t size, uint32_t count_n);
+        extern void read_avx(uint8_t *src, uint32_t size, uint32_t count_n);
+        extern void read_avx512(uint8_t *src, uint32_t size, uint32_t count_n);
+        extern void write_sse(uint8_t *dst, uint32_t size, uint32_t count_n);
+        extern void write_avx(uint8_t *dst, uint32_t size, uint32_t count_n);
+        extern void write_avx512(uint8_t *dst, uint32_t size, uint32_t count_n);
+        extern void ram_latency_test(index_t *src);
 #ifdef __cplusplus
 }
 #endif
 
-//RGY_NOINLINE
-//void ram_latency_test(volatile index_t *src) {
-//    size_t idx = src[0];
-//    while (idx > 0)
-//        idx = *(volatile index_t *)(src + idx);
-//}
+#else //#if ENABLE_ASM
+
+#include <cstdint>
+#if defined(__x86__) || defined(__x86_64__)
+#include <emmintrin.h>
+using data128 = __m128i;
+#elif defined(__aarch64__)
+#include "arm_neon.h"
+using data128 = int32x4_t;
+#endif
+
+RGY_NOINLINE
+void read_c(uint8_t *src, uint32_t size, uint32_t count_n) {
+    data128 dat0, dat1, dat2, dat3;
+    do {
+        int inner_count = size >> 8;
+        volatile uint8_t *ptr = src;
+        do {
+            dat0 = *(volatile data128 *)(ptr +   0);
+            dat1 = *(volatile data128 *)(ptr +  16);
+            dat2 = *(volatile data128 *)(ptr +  32);
+            dat3 = *(volatile data128 *)(ptr +  48);
+            dat0 = *(volatile data128 *)(ptr +  64);
+            dat1 = *(volatile data128 *)(ptr +  80);
+            dat2 = *(volatile data128 *)(ptr +  96);
+            dat3 = *(volatile data128 *)(ptr + 112);
+            ptr += 128;
+            dat0 = *(volatile data128 *)(ptr +   0);
+            dat1 = *(volatile data128 *)(ptr +  16);
+            dat2 = *(volatile data128 *)(ptr +  32);
+            dat3 = *(volatile data128 *)(ptr +  48);
+            dat0 = *(volatile data128 *)(ptr +  64);
+            dat1 = *(volatile data128 *)(ptr +  80);
+            dat2 = *(volatile data128 *)(ptr +  96);
+            dat3 = *(volatile data128 *)(ptr + 112);
+            ptr += 128;
+            inner_count--;
+        } while (inner_count > 0);
+        count_n--;
+    } while (count_n > 0);
+}
+
+RGY_NOINLINE
+void write_c(uint8_t *src, uint32_t size, uint32_t count_n) {
+    data128 dat0 = {0}, dat1 = {0}, dat2 = {0}, dat3 = {0};
+    do {
+        int inner_count = size >> 8;
+        volatile uint8_t *ptr = src;
+        do {
+            *(volatile data128 *)(ptr +   0) = dat0;
+            *(volatile data128 *)(ptr +  16) = dat1;
+            *(volatile data128 *)(ptr +  32) = dat2;
+            *(volatile data128 *)(ptr +  48) = dat3;
+            *(volatile data128 *)(ptr +  64) = dat0;
+            *(volatile data128 *)(ptr +  80) = dat1;
+            *(volatile data128 *)(ptr +  96) = dat2;
+            *(volatile data128 *)(ptr + 112) = dat3;
+            ptr += 128;
+            *(volatile data128 *)(ptr +   0) = dat0;
+            *(volatile data128 *)(ptr +  16) = dat1;
+            *(volatile data128 *)(ptr +  32) = dat2;
+            *(volatile data128 *)(ptr +  48) = dat3;
+            *(volatile data128 *)(ptr +  64) = dat0;
+            *(volatile data128 *)(ptr +  80) = dat1;
+            *(volatile data128 *)(ptr +  96) = dat2;
+            *(volatile data128 *)(ptr + 112) = dat3;
+            ptr += 128;
+            inner_count--;
+        } while (inner_count > 0);
+        count_n--;
+    } while (count_n > 0);
+}
+
+RGY_NOINLINE
+void ram_latency_test(volatile index_t *src) {
+    uint32_t idx = src[0];
+    while (idx)
+        idx = src[idx];
+}
+#endif //#if ENABLE_ASM
 
 typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
@@ -100,9 +175,15 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     const int avx = (0 != (get_availableSIMD() & AVX)) + (0 != (get_availableSIMD() & AVX512F));
     int64_t result[TEST_COUNT];
     static const func_ram_test RAM_TEST_LIST[][3] = {
+    #if ENABLE_ASM
         { read_sse, write_sse },
         { read_avx, write_avx },
         { read_avx512, write_avx512 }
+    #else
+        { read_c, write_c },
+        { read_c, write_c },
+        { read_c, write_c }
+    #endif
     };
 
     const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];

@@ -282,11 +282,149 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 
 const int TEST_COUNT = 5000;
 
+#if ENABLE_ASM
 #ifdef __cplusplus
 extern "C" {
 #endif
     extern int runl_por(int loop_count);
 #ifdef __cplusplus
+}
+#endif
+#else
+int runl_por(int loop_count) {
+    int i = loop_count;
+    do {
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        i += loop_count;
+        i ^= loop_count;
+        loop_count--;
+    } while (loop_count > 0);
+    return i;
 }
 #endif
 
