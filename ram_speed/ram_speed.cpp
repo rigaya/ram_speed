@@ -83,10 +83,10 @@ extern "C" {
 #else //#if ENABLE_ASM
 
 #include <cstdint>
-#if defined(__x86__) || defined(__x86_64__)
+#if defined(__x86__) || defined(__x86_64__) || defined(_M_X86) || defined(_M_X64)
 #include <emmintrin.h>
 using data128 = __m128i;
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM)
 #include "arm_neon.h"
 using data128 = int32x4_t;
 #endif
