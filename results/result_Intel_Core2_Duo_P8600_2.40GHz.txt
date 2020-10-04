@@ -1,0 +1,1547 @@
+CPU-Z TXT Report
+-------------------------------------------------------------------------
+
+Binaries
+-------------------------------------------------------------------------
+
+CPU-Z version			1.93.0
+
+Processors
+-------------------------------------------------------------------------
+
+Number of sockets		1
+Number of threads		2
+
+APICs
+-------------------------------------------------------------------------
+
+Socket 0	
+	-- Core 0 (ID 0)	
+		-- Thread 0	0
+	-- Core 1 (ID 1)	
+		-- Thread 1	1
+
+Timers
+-------------------------------------------------------------------------
+
+	ACPI timer		3.580 MHz
+	Perf timer		2.338 MHz
+	Sys timer		1.000 KHz
+
+
+Processors Information
+-------------------------------------------------------------------------
+
+Socket 1			ID = 0
+	Number of cores		2 (max 2)
+	Number of threads	2 (max 2)
+	Manufacturer		GenuineIntel
+	Name			Intel Mobile Core 2 Duo P8600
+	Codename		Penryn
+	Specification		Intel(R) Core(TM)2 Duo CPU     P8600  @ 2.40GHz
+	Package (platform ID)	Socket P (478) (0x7)
+	CPUID			6.7.A
+	Extended CPUID		6.17
+	Core Stepping		R0
+	Technology		45 nm
+	Core Speed		798.0 MHz
+	Multiplier x Bus Speed	3.0 x 266.0 MHz
+	Base frequency (cores)	266.0 MHz
+	Base frequency (ext.)	266.0 MHz
+	Rated Bus speed		1064.0 MHz
+	Stock frequency		2400 MHz
+	Instructions sets	MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, EM64T, VT-x
+	Microcode Revision	0xA07
+	L1 Data cache		2 x 32 KBytes, 8-way set associative, 64-byte line size
+	L1 Instruction cache	2 x 32 KBytes, 8-way set associative, 64-byte line size
+	L2 cache		3072 KBytes, 12-way set associative, 64-byte line size
+	Max CPUID level		0000000Dh
+	Max CPUID ext. level	80000008h
+	Cache descriptor	Level 1, D, 32 KB, 1 thread(s)
+	Cache descriptor	Level 1, I, 32 KB, 1 thread(s)
+	Cache descriptor	Level 2, U, 3 MB, 2 thread(s)
+	FID/VID Control		yes
+	FID range		6.0x - 9.5x
+	Max VID			1.238 V
+
+
+
+	Temperature 0		42 degC (107 degF) (Core #0)
+	Temperature 1		39 degC (102 degF) (Core #1)
+	Clock Speed 0		n.a. (Core #0)
+	Clock Speed 1		n.a. (Core #1)
+
+
+Thread dumps
+-------------------------------------------------------------------------
+
+CPU Thread 0	
+	APIC ID			0
+	Topology		Processor ID 0, Core ID 0, Thread ID 0
+
+	CPUID		 
+	0x00000000		0x0000000D	0x756E6547	0x6C65746E	0x49656E69
+	0x00000001		0x0001067A	0x00020800	0x0C08E3FD	0xBFEBFBFF
+	0x00000002		0x05B0B101	0x005657F0	0x00000000	0x2CB43048
+	0x00000003		0x00000000	0x00000000	0x00000000	0x00000000
+	0x00000004		0x04000121	0x01C0003F	0x0000003F	0x00000001
+	0x00000004		0x04000122	0x01C0003F	0x0000003F	0x00000001
+	0x00000004		0x04004143	0x02C0003F	0x00000FFF	0x00000001
+	0x00000005		0x00000040	0x00000040	0x00000003	0x03122220
+	0x00000006		0x00000003	0x00000002	0x00000003	0x00000000
+	0x00000007		0x00000000	0x00000000	0x00000000	0x00000000
+	0x00000008		0x00000400	0x00000000	0x00000000	0x00000000
+	0x00000009		0x00000000	0x00000000	0x00000000	0x00000000
+	0x0000000A		0x07280202	0x00000000	0x00000000	0x00000503
+	0x0000000C		0x00000000	0x00000000	0x00000000	0x00000000
+	0x0000000D		0x00000003	0x00000240	0x00000240	0x00000000
+	0x0000000D		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000000		0x80000008	0x00000000	0x00000000	0x00000000
+	0x80000001		0x00000000	0x00000000	0x00000001	0x20100800
+	0x80000002		0x65746E49	0x2952286C	0x726F4320	0x4D542865
+	0x80000003		0x44203229	0x43206F75	0x20205550	0x50202020
+	0x80000004		0x30303638	0x20402020	0x30342E32	0x007A4847
+	0x80000005		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000006		0x00000000	0x00000000	0x0C006040	0x00000000
+	0x80000007		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000008		0x00003024	0x00000000	0x00000000	0x00000000
+
+	MSR 0x0000001B		0x00000000	0xFEE00900
+	MSR 0x0000003A		0x00000000	0x0000000D
+	MSR 0x00000017		0x001C0000	0xB9F48920
+	MSR 0x0000003F		0x00000000	0x00000000
+	MSR 0x000000CE		0x8017492A	0x4345060D
+	MSR 0x000001A0		0x00000093	0x6C9F2688
+	MSR 0x000000EE		0x00000000	0x9EB91000
+	MSR 0x0000011E		0x00000000	0x74702119
+	MSR 0x000000CD		0x00000000	0x000001E0
+	MSR 0x0000019C		0x00000000	0x883A0180
+	MSR 0x00000198		0x06170920	0x0600860D
+	MSR 0x00000199		0x00000000	0x0000860D
+
+CPU Thread 1	
+	APIC ID			1
+	Topology		Processor ID 0, Core ID 1, Thread ID 0
+
+	CPUID		 
+	0x00000000		0x0000000D	0x756E6547	0x6C65746E	0x49656E69
+	0x00000001		0x0001067A	0x01020800	0x0C08E3FD	0xBFEBFBFF
+	0x00000002		0x05B0B101	0x005657F0	0x00000000	0x2CB43048
+	0x00000003		0x00000000	0x00000000	0x00000000	0x00000000
+	0x00000004		0x04000121	0x01C0003F	0x0000003F	0x00000001
+	0x00000004		0x04000122	0x01C0003F	0x0000003F	0x00000001
+	0x00000004		0x04004143	0x02C0003F	0x00000FFF	0x00000001
+	0x00000005		0x00000040	0x00000040	0x00000003	0x03122220
+	0x00000006		0x00000003	0x00000002	0x00000003	0x00000000
+	0x00000007		0x00000000	0x00000000	0x00000000	0x00000000
+	0x00000008		0x00000400	0x00000000	0x00000000	0x00000000
+	0x00000009		0x00000000	0x00000000	0x00000000	0x00000000
+	0x0000000A		0x07280202	0x00000000	0x00000000	0x00000503
+	0x0000000C		0x00000000	0x00000000	0x00000000	0x00000000
+	0x0000000D		0x00000003	0x00000240	0x00000240	0x00000000
+	0x0000000D		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000000		0x80000008	0x00000000	0x00000000	0x00000000
+	0x80000001		0x00000000	0x00000000	0x00000001	0x20100800
+	0x80000002		0x65746E49	0x2952286C	0x726F4320	0x4D542865
+	0x80000003		0x44203229	0x43206F75	0x20205550	0x50202020
+	0x80000004		0x30303638	0x20402020	0x30342E32	0x007A4847
+	0x80000005		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000006		0x00000000	0x00000000	0x0C006040	0x00000000
+	0x80000007		0x00000000	0x00000000	0x00000000	0x00000000
+	0x80000008		0x00003024	0x00000000	0x00000000	0x00000000
+
+	MSR 0x0000001B		0x00000000	0xFEE00800
+	MSR 0x0000003A		0x00000000	0x0000000D
+	MSR 0x00000017		0x001C0000	0xB9F48920
+	MSR 0x0000003F		0x00000000	0x00000000
+	MSR 0x000000CE		0x8017492A	0x4345060D
+	MSR 0x000001A0		0x00000093	0x6C9F2688
+	MSR 0x000000EE		0x00000000	0x9EB91000
+	MSR 0x0000011E		0x00000000	0x74702119
+	MSR 0x000000CD		0x00000000	0x000001E0
+	MSR 0x0000019C		0x00000000	0x883B0180
+	MSR 0x00000198		0x0617492A	0x0600860D
+	MSR 0x00000199		0x00000000	0x0000860D
+
+
+
+BIOS
+-------------------------------------------------------------------------
+
+UEFI				Yes
+BIOS Date			09/01/09
+
+Chipset
+-------------------------------------------------------------------------
+
+Northbridge			Intel GM45/GM47 rev. 07
+Southbridge			Intel 82801IM (ICH9-M) rev. 03
+Memory Type			DDR2
+Memory Size			4 GBytes
+Channels			Dual, (Symmetric)
+Memory Frequency		399.0 MHz (2:3)
+CAS# latency (CL)		6.0
+RAS# to CAS# delay (tRCD)	6
+RAS# Precharge (tRP)		6
+Cycle Time (tRAS)		18
+Host Bridge			0x2A40
+
+
+Memory SPD
+-------------------------------------------------------------------------
+
+DIMM #				1
+	SMBus address		0x50
+	Memory type		DDR2
+	Module format		SO-DIMM
+	Module Manufacturer(ID)	Nanya Technology (7F7F7F0B00000000000000)
+	Size			2048 MBytes
+	Max bandwidth		PC2-6400 (400 MHz)
+	Part number		NT2GT64U8HD0BN-AD 
+	Serial number		C95AB81A
+	Manufacturing date	Week 24/Year 09
+	Number of banks		8
+	Data width		64 bits
+	Correction		None
+	Nominal Voltage		1.80 Volts
+	EPP			no
+	XMP			no
+	AMP			no
+JEDEC timings table		CL-tRCD-tRP-tRAS-tRC @ frequency
+	JEDEC #1		4.0-4-4-12-16 @ 266 MHz
+	JEDEC #2		5.0-5-5-15-20 @ 333 MHz
+	JEDEC #3		6.0-6-6-18-24 @ 400 MHz
+
+DIMM #				2
+	SMBus address		0x52
+	Memory type		DDR2
+	Module format		SO-DIMM
+	Module Manufacturer(ID)	Nanya Technology (7F7F7F0B00000000000000)
+	Size			2048 MBytes
+	Max bandwidth		PC2-6400 (400 MHz)
+	Part number		NT2GT64U8HD0BN-AD 
+	Serial number		996AB81A
+	Manufacturing date	Week 24/Year 09
+	Number of banks		8
+	Data width		64 bits
+	Correction		None
+	Nominal Voltage		1.80 Volts
+	EPP			no
+	XMP			no
+	AMP			no
+JEDEC timings table		CL-tRCD-tRP-tRAS-tRC @ frequency
+	JEDEC #1		4.0-4-4-12-16 @ 266 MHz
+	JEDEC #2		5.0-5-5-15-20 @ 333 MHz
+	JEDEC #3		6.0-6-6-18-24 @ 400 MHz
+
+DIMM #				1
+SPD registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	80 08 08 0E 0A 61 40 00 05 25 40 00 82 08 00 00 
+	10	0C 08 70 01 04 00 07 30 45 3D 50 3C 1E 3C 2D 01 
+	20	17 25 05 12 3C 1E 1E 00 06 3C 7F 80 14 1E 00 00 
+	30	00 00 00 00 00 00 00 00 00 00 00 00 00 00 13 E4 
+	40	7F 7F 7F 0B 00 00 00 00 1B 4E 54 32 47 54 36 34 
+	50	55 38 48 44 30 42 4E 2D 41 44 20 20 00 09 24 C9 
+	60	5A B8 1A 88 01 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 42 32 31 39 32 30 00 00 00 
+	A0	00 31 00 00 33 4D 32 30 39 36 31 31 30 31 4B 10 
+	B0	01 4E 54 55 4D 00 32 2D 31 36 00 00 00 00 00 02 
+	C0	4E 54 44 32 00 31 2D 30 32 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 80 00 00 00 88 00 00 00 
+	E0	00 00 00 00 00 01 03 00 00 07 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 88 
+
+DIMM #				2
+SPD registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	80 08 08 0E 0A 61 40 00 05 25 40 00 82 08 00 00 
+	10	0C 08 70 01 04 00 07 30 45 3D 50 3C 1E 3C 2D 01 
+	20	17 25 05 12 3C 1E 1E 00 06 3C 7F 80 14 1E 00 00 
+	30	00 00 00 00 00 00 00 00 00 00 00 00 00 00 13 E4 
+	40	7F 7F 7F 0B 00 00 00 00 1B 4E 54 32 47 54 36 34 
+	50	55 38 48 44 30 42 4E 2D 41 44 20 20 00 09 24 99 
+	60	6A B8 1A 88 01 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 42 32 31 39 32 30 00 00 00 
+	A0	00 31 00 00 3B 4D 32 30 39 36 31 31 30 31 4B 10 
+	B0	01 4E 54 55 4D 00 32 2D 31 36 00 00 00 00 00 02 
+	C0	4E 54 44 32 00 31 2D 30 32 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 80 00 00 00 88 00 00 00 
+	E0	00 00 00 00 00 01 03 00 00 07 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 88 
+
+
+Monitoring
+-------------------------------------------------------------------------
+
+Mainboard Model		VAIO (0x0000012F - 0x00003158)
+
+LPCIO
+-------------------------------------------------------------------------
+
+Hardware Monitors
+-------------------------------------------------------------------------
+
+Hardware monitor		Hardware monitor ID=0xFFFFFFFF
+
+Hardware monitor		D3D
+
+
+PCI Devices
+-------------------------------------------------------------------------
+
+Register space			PCI Express, base address = 0x0F8000000
+
+Description			Host Bridge
+Location			bus 0 (0x00), device 0 (0x00), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2A40
+	Revision ID		0x07
+	PI			0x00
+	SubClass		0x00
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x00
+	Int. Pin		0x00
+PCI capability
+	Caps class		Vendor Dependant
+	Caps offset		0xE0
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 40 2A 06 00 90 20 07 00 00 06 00 00 00 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 E0 00 00 00 00 00 00 00 00 00 00 00 
+	40	01 90 D1 FE 00 00 00 00 01 00 D1 FE 00 00 00 00 
+	50	00 00 80 03 19 00 00 00 00 00 00 00 00 00 00 00 
+	60	05 00 00 F8 00 00 00 00 01 80 D1 FE 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 01 04 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	10 11 11 11 11 33 33 00 40 00 4F 00 00 1A 3B 00 
+	A0	20 00 00 14 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 C0 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 20 02 00 00 
+	E0	09 00 0A 11 88 64 00 1C 01 80 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 A0 0F 07 00 00 00 00 00 
+
+Description			VGA Controller
+Location			bus 0 (0x00), device 2 (0x02), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2A42
+	Revision ID		0x07
+	PI			0x00
+	SubClass		0x00
+	BaseClass		0x03
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 0 (memory)	0xD0000000
+	Address 2 (memory)	0xC0000000
+	Address 4 (port)	0x000060F0
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x00
+	Int. Pin		0x01
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x90
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xD0
+	Caps version		1.2
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 42 2A 07 04 90 00 07 00 00 03 00 00 80 00 
+	10	04 00 00 D0 00 00 00 00 0C 00 00 C0 00 00 00 00 
+	20	F1 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 90 00 00 00 00 00 00 00 00 01 00 00 
+	40	00 00 00 00 48 00 00 00 09 00 0A 11 88 64 00 1C 
+	50	01 80 80 03 19 00 00 00 00 00 00 00 00 00 00 B8 
+	60	00 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	05 D0 01 00 0C 30 E0 FE B0 49 00 00 00 00 00 00 
+	A0	00 00 00 00 09 00 06 20 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 40 01 00 00 
+	D0	01 00 23 00 00 00 00 00 00 00 00 00 34 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 80 00 1A 41 20 00 00 
+	F0	0D 1C 34 07 FF 00 00 00 A0 0F 07 00 18 F0 B8 B7 
+
+Description			Display Controller
+Location			bus 0 (0x00), device 2 (0x02), function 1 (0x01)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2A43
+	Revision ID		0x07
+	PI			0x00
+	SubClass		0x80
+	BaseClass		0x03
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 0 (memory)	0xD3400000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x00
+	Int. Pin		0x00
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xD0
+	Caps version		1.2
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 43 2A 06 00 90 00 07 00 80 03 00 00 80 00 
+	10	04 00 40 D3 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 D0 00 00 00 00 00 00 00 00 00 00 00 
+	40	00 00 00 00 48 00 00 00 09 00 0A 11 88 64 00 1C 
+	50	01 80 80 03 19 00 00 00 00 00 00 00 00 00 00 B8 
+	60	00 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 40 01 00 00 
+	D0	01 00 23 00 00 00 00 00 00 00 00 00 34 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	0D 1C 34 07 FF 00 00 00 A0 0F 07 00 00 00 00 00 
+
+Description			USB Controller (UHCI)
+Location			bus 0 (0x00), device 26 (0x1A), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2937
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 4 (port)	0x000060C0
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x10
+	Int. Pin		0x01
+PCI capability
+	Caps class		0x13
+	Caps offset		0x50
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 37 29 05 00 90 02 03 00 03 0C 00 00 80 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	C1 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 10 01 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 2F 00 00 00 00 00 00 00 00 01 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			USB Controller (UHCI)
+Location			bus 0 (0x00), device 26 (0x1A), function 1 (0x01)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2938
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 4 (port)	0x000060A0
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x15
+	Int. Pin		0x02
+PCI capability
+	Caps class		0x13
+	Caps offset		0x50
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 38 29 05 00 90 02 03 00 03 0C 00 00 00 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	A1 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 15 02 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 2F 00 00 00 00 00 00 00 00 01 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			USB 2.0 Controller (EHCI)
+Location			bus 0 (0x00), device 26 (0x1A), function 7 (0x07)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x293C
+	Revision ID		0x03
+	PI			0x20
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD6804C00
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x13
+	Int. Pin		0x04
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x50
+	Caps version		1.1
+PCI capability
+	Caps class		Debug Port
+	Caps offset		0x58
+PCI capability
+	Caps class		0x13
+	Caps offset		0x98
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 3C 29 06 00 90 02 03 20 03 0C 00 00 00 00 
+	10	00 4C 80 D6 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 13 04 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	01 58 C2 C9 00 00 00 00 0A 98 A0 20 00 00 00 00 
+	60	20 20 FF 01 00 00 00 00 01 00 00 01 00 00 00 00 
+	70	00 00 C7 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 11 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 13 00 06 03 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 AA FF 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 88 85 40 00 86 0F 04 00 06 17 02 20 
+
+Description			Multimedia device
+Location			bus 0 (0x00), device 27 (0x1B), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x293E
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x04
+	Cache Line		0x10
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD6800000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x16
+	Int. Pin		0x01
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x50
+	Caps version		1.1
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x60
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0x70
+	Device type		Root Complex Integrated Endpoint Device
+	Port			0
+	Version			1.0
+	Link width		0x (max 0x)
+Extended capabilities
+	Caps class		Virtual Channel
+	Caps offset		0x100
+	Caps class		Root Complex Link Declaration
+	Caps offset		0x130
+	Link Entries #		1
+	Port Number		15
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 3E 29 06 00 10 00 03 00 03 04 10 00 00 00 
+	10	04 00 80 D6 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 16 01 00 00 
+	40	01 00 00 07 07 00 00 00 00 00 00 00 00 80 00 00 
+	50	01 60 42 C8 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	05 70 80 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	10 00 91 00 00 00 00 10 00 00 10 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 04 00 01 00 00 00 00 31 00 A3 02 00 00 00 00 
+	D0	61 00 A3 02 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+	100	02 00 01 13 01 00 00 00 00 00 00 00 00 00 00 00 
+	110	00 00 00 00 7F 00 00 80 00 00 00 00 00 00 00 00 
+	120	80 00 00 81 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	05 00 01 00 00 01 02 0F 00 00 00 00 00 00 00 00 
+
+Description			PCI to PCI Bridge
+Location			bus 0 (0x00), device 28 (0x1C), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2940
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x04
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x81
+PCI header
+	Primary bus		0x00
+	Secondary bus		0x02
+	Int. Line		0x11
+	Int. Pin		0x01
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0x40
+	Device type		Root Port of PCI-E Root Complex
+	Port			1
+	Version			1.0
+	Physical slot		#0
+	Presence detect		yes
+	Link width		1x (max 1x)
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x80
+PCI capability
+	Caps class		Subsystem Vendor
+	Caps offset		0x90
+	SubVendor ID		0x104D
+	SubSystem ID		0x903F
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xA0
+	Caps version		1.1
+Extended capabilities
+	Caps class		Virtual Channel
+	Caps offset		0x100
+	Caps class		Root Complex Link Declaration
+	Caps offset		0x180
+	Link Entries #		1
+	Port Number		1
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 40 29 07 00 10 00 03 00 04 06 00 00 81 00 
+	10	00 00 00 00 00 00 00 00 00 02 02 00 40 50 00 00 
+	20	70 D5 70 D6 41 D0 31 D1 00 00 00 00 00 00 00 00 
+	30	00 00 00 00 40 00 00 00 00 00 00 00 11 01 00 00 
+	40	10 80 41 01 00 80 00 00 00 00 11 00 11 2C 11 01 
+	50	43 00 11 30 E0 A0 00 00 09 00 40 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	05 90 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	0D A0 00 00 4D 10 3F 90 00 00 00 00 00 00 00 00 
+	A0	01 00 02 C8 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 11 C8 00 00 00 00 
+	E0	00 0F C7 00 06 07 08 00 33 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+	100	02 00 01 18 00 00 00 00 01 00 00 00 00 00 00 00 
+	110	01 00 00 00 01 00 00 80 00 00 00 00 00 00 00 00 
+	120	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Description			PCI to PCI Bridge
+Location			bus 0 (0x00), device 28 (0x1C), function 2 (0x02)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2944
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x04
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x81
+PCI header
+	Primary bus		0x00
+	Secondary bus		0x03
+	Int. Line		0x12
+	Int. Pin		0x03
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0x40
+	Device type		Root Port of PCI-E Root Complex
+	Port			3
+	Version			1.0
+	Physical slot		#0
+	Presence detect		yes
+	Link width		1x (max 1x)
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x80
+PCI capability
+	Caps class		Subsystem Vendor
+	Caps offset		0x90
+	SubVendor ID		0x104D
+	SubSystem ID		0x903F
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xA0
+	Caps version		1.1
+Extended capabilities
+	Caps class		Virtual Channel
+	Caps offset		0x100
+	Caps class		Root Complex Link Declaration
+	Caps offset		0x180
+	Link Entries #		1
+	Port Number		3
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 44 29 07 00 10 00 03 00 04 06 00 00 81 00 
+	10	00 00 00 00 00 00 00 00 00 03 03 00 30 30 00 00 
+	20	60 D4 60 D5 41 D1 31 D2 00 00 00 00 00 00 00 00 
+	30	00 00 00 00 40 00 00 00 00 00 00 00 12 03 00 00 
+	40	10 80 41 01 00 80 00 00 00 00 11 00 11 2C 11 03 
+	50	42 00 11 30 E0 A0 10 00 09 00 40 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	05 90 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	0D A0 00 00 4D 10 3F 90 00 00 00 00 00 00 00 00 
+	A0	01 00 02 C8 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 11 C8 00 00 00 00 
+	E0	00 0F C7 00 06 07 08 00 33 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+	100	02 00 01 18 00 00 00 00 01 00 00 00 00 00 00 00 
+	110	01 00 00 00 01 00 00 80 00 00 00 00 00 00 00 00 
+	120	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Description			PCI to PCI Bridge
+Location			bus 0 (0x00), device 28 (0x1C), function 4 (0x04)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2948
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x04
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x81
+PCI header
+	Primary bus		0x00
+	Secondary bus		0x04
+	Int. Line		0x11
+	Int. Pin		0x01
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0x40
+	Device type		Root Port of PCI-E Root Complex
+	Port			5
+	Version			1.0
+	Physical slot		#0
+	Presence detect		no
+	Link width		0x (max 1x)
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x80
+PCI capability
+	Caps class		Subsystem Vendor
+	Caps offset		0x90
+	SubVendor ID		0x104D
+	SubSystem ID		0x903F
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xA0
+	Caps version		1.1
+Extended capabilities
+	Caps class		Virtual Channel
+	Caps offset		0x100
+	Caps class		Root Complex Link Declaration
+	Caps offset		0x180
+	Link Entries #		1
+	Port Number		5
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 48 29 07 00 10 00 03 00 04 06 00 00 81 00 
+	10	00 00 00 00 00 00 00 00 00 04 05 00 F0 F0 00 20 
+	20	80 FE B0 FE 41 FE 71 FE 00 00 00 00 00 00 00 00 
+	30	00 00 00 00 40 00 00 00 00 00 00 00 11 01 00 00 
+	40	10 80 41 01 00 80 00 00 00 00 10 00 11 4C 11 05 
+	50	00 00 01 10 E0 A0 20 00 09 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	05 90 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	0D A0 00 00 4D 10 3F 90 00 00 00 00 00 00 00 00 
+	A0	01 00 02 C8 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 11 C8 00 00 00 00 
+	E0	00 0F C7 00 06 07 08 00 31 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+	100	02 00 01 18 00 00 00 00 01 00 00 00 00 00 00 00 
+	110	01 00 00 00 01 00 00 80 00 00 00 00 00 00 00 00 
+	120	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Description			USB Controller (UHCI)
+Location			bus 0 (0x00), device 29 (0x1D), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2934
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 4 (port)	0x00006080
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x17
+	Int. Pin		0x01
+PCI capability
+	Caps class		0x13
+	Caps offset		0x50
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 34 29 05 00 90 02 03 00 03 0C 00 00 80 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	81 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 17 01 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 2F 00 00 00 00 00 00 00 00 01 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			USB Controller (UHCI)
+Location			bus 0 (0x00), device 29 (0x1D), function 1 (0x01)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2935
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 4 (port)	0x00006060
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x13
+	Int. Pin		0x02
+PCI capability
+	Caps class		0x13
+	Caps offset		0x50
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 35 29 05 00 90 02 03 00 03 0C 00 00 00 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	61 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 13 02 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 2F 00 00 00 00 00 00 00 00 01 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			USB Controller (UHCI)
+Location			bus 0 (0x00), device 29 (0x1D), function 2 (0x02)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2936
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 4 (port)	0x00006040
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x10
+	Int. Pin		0x04
+PCI capability
+	Caps class		0x13
+	Caps offset		0x50
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 36 29 05 00 90 02 03 00 03 0C 00 00 00 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	41 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 10 04 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 2F 00 00 00 00 00 00 00 00 01 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			USB 2.0 Controller (EHCI)
+Location			bus 0 (0x00), device 29 (0x1D), function 7 (0x07)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x293A
+	Revision ID		0x03
+	PI			0x20
+	SubClass		0x03
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD6804800
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x17
+	Int. Pin		0x01
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x50
+	Caps version		1.1
+PCI capability
+	Caps class		Debug Port
+	Caps offset		0x58
+PCI capability
+	Caps class		0x13
+	Caps offset		0x98
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 3A 29 06 00 90 02 03 20 03 0C 00 00 00 00 
+	10	00 48 80 D6 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 17 01 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	01 58 C2 C9 00 00 00 00 0A 98 A0 20 00 00 00 00 
+	60	20 20 FF 01 00 00 00 00 01 00 00 01 00 00 00 00 
+	70	00 00 D7 3F 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 11 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 13 00 06 03 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 AA FF 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 88 85 40 00 86 0F 04 00 06 17 02 20 
+
+Description			PCI to PCI Bridge
+Location			bus 0 (0x00), device 30 (0x1E), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2448
+	Revision ID		0x93
+	PI			0x01
+	SubClass		0x04
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x01
+PCI header
+	Primary bus		0x00
+	Secondary bus		0x06
+	Int. Line		0xFF
+	Int. Pin		0x00
+PCI capability
+	Caps class		Subsystem Vendor
+	Caps offset		0x50
+	SubVendor ID		0x104D
+	SubSystem ID		0x903F
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 48 24 07 00 10 00 93 01 04 06 00 00 01 00 
+	10	00 00 00 00 00 00 00 00 00 06 06 20 F0 00 80 22 
+	20	50 D3 50 D3 F1 FF 01 00 00 00 00 00 00 00 00 00 
+	30	00 00 00 00 50 00 00 00 00 00 00 00 FF 00 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 12 00 00 
+	50	0D 00 00 00 4D 10 3F 90 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			PCI to ISA Bridge
+Location			bus 0 (0x00), device 31 (0x1F), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2919
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x01
+	BaseClass		0x06
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x00
+	Int. Pin		0x00
+PCI capability
+	Caps class		Vendor Dependant
+	Caps offset		0xE0
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 19 29 07 00 10 02 03 00 01 06 00 00 80 00 
+	10	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 E0 00 00 00 00 00 00 00 00 00 00 00 
+	40	01 04 00 00 80 00 00 00 01 05 00 00 10 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	8B 80 8B 8B D0 00 00 00 80 8A 8B 8B F8 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	10 00 01 3F 00 00 00 00 41 16 0C 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	A4 0E 00 00 00 00 80 00 2B 1C 8A 40 00 03 00 40 
+	B0	00 00 F0 00 00 00 00 00 04 80 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	3E 22 11 00 67 45 00 00 CF FF 00 00 08 00 00 00 
+	E0	09 00 0C 10 20 02 24 03 64 00 00 00 00 00 00 00 
+	F0	01 C0 D1 FE 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			Serial ATA Controller
+Location			bus 0 (0x00), device 31 (0x1F), function 2 (0x02)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2929
+	Revision ID		0x03
+	PI			0x01
+	SubClass		0x06
+	BaseClass		0x01
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (port)	0x000060E8
+	Address 1 (port)	0x000060FC
+	Address 2 (port)	0x000060E0
+	Address 3 (port)	0x000060F8
+	Address 4 (port)	0x00006020
+	Address 5 (memory)	0xD6804000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x13
+	Int. Pin		0x02
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x80
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x70
+	Caps version		1.2
+PCI capability
+	Caps class		0x12
+	Caps offset		0xA8
+PCI capability
+	Caps class		0x13
+	Caps offset		0xB0
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 29 29 07 00 B0 02 03 01 06 01 00 00 00 00 
+	10	E9 60 00 00 FD 60 00 00 E1 60 00 00 F9 60 00 00 
+	20	21 60 00 00 00 40 80 D6 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 80 00 00 00 00 00 00 00 13 02 00 00 
+	40	07 A3 03 A3 00 00 00 00 05 00 01 02 00 00 00 00 
+	50	00 00 00 00 00 10 00 00 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	01 A8 03 40 08 00 00 00 00 00 00 00 00 00 00 00 
+	80	05 70 08 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	60 3C 03 83 93 01 00 3C 00 00 00 00 0C 00 00 00 
+	A0	AC 00 00 00 0A 00 12 00 12 B0 10 00 48 00 00 00 
+	B0	13 00 06 03 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 05 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			SMBus Controller
+Location			bus 0 (0x00), device 31 (0x1F), function 3 (0x03)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x2930
+	Revision ID		0x03
+	PI			0x00
+	SubClass		0x05
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD6805000
+	Address 4 (port)	0x00006000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x0B
+	Int. Pin		0x03
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 30 29 03 00 80 02 03 00 05 0C 00 00 00 00 
+	10	04 50 80 D6 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	01 60 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 00 00 00 00 00 00 00 00 0B 03 00 00 
+	40	01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	02 04 04 00 F0 00 08 08 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 86 0F 04 00 00 00 00 00 
+
+Description			Ethernet Controller
+Location			bus 2 (0x02), device 0 (0x00), function 0 (0x00)
+Common header
+	Vendor ID		0x11AB
+	Model ID		0x4354
+	Revision ID		0x12
+	PI			0x00
+	SubClass		0x00
+	BaseClass		0x02
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD5700000
+	Address 2 (port)	0x00004000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x10
+	Int. Pin		0x01
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x48
+	Caps version		1.2
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0x5C
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0xC0
+	Device type		Legacy PCI-E Endpoint Device
+	Port			0
+	Version			2.0
+	Link width		1x (max 1x)
+Extended capabilities
+	Caps class		Advanced Error Reporting
+	Caps offset		0x100
+	Caps class		Device Serial Number
+	Caps offset		0x130
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	AB 11 54 43 07 00 10 00 12 00 00 02 00 00 00 00 
+	10	04 00 70 D5 00 00 00 00 01 40 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 48 00 00 00 00 00 00 00 10 01 00 00 
+	40	00 00 B0 80 09 C0 A0 01 01 5C 03 FE 00 21 00 13 
+	50	03 5C 00 80 00 00 00 00 00 40 04 01 05 C0 80 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 15 30 FF 68 0B 00 0B 00 82 A8 E8 00 
+	90	00 00 00 00 00 00 00 00 A0 25 26 00 00 00 00 80 
+	A0	F6 00 00 FF F8 80 00 04 0C 31 33 40 04 0A 10 44 
+	B0	00 00 00 05 00 00 60 20 FA 00 00 00 00 00 00 00 
+	C0	10 00 12 00 C0 8F 04 05 00 40 19 00 11 AC 07 00 
+	D0	4B 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 10 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	100	01 00 01 13 00 00 00 00 00 00 00 00 11 20 06 00 
+	110	40 20 00 00 00 20 00 00 1F 00 00 00 00 00 00 00 
+	120	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	03 00 01 00 00 1D BA FF FF 79 7A 32 00 00 00 00 
+
+Description			Network Controller
+Location			bus 3 (0x03), device 0 (0x00), function 0 (0x00)
+Common header
+	Vendor ID		0x8086
+	Model ID		0x4232
+	Revision ID		0x00
+	PI			0x00
+	SubClass		0x80
+	BaseClass		0x02
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x00
+PCI header
+	Address 0 (memory)	0xD4600000
+	Subvendor ID		0x8086
+	Subsystem ID		0x1301
+	Int. Line		0x00
+	Int. Pin		0x01
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xC8
+	Caps version		1.2
+PCI capability
+	Caps class		Message Signalled Interrupts
+	Caps offset		0xD0
+PCI capability
+	Caps class		PCI Express
+	Caps offset		0xE0
+	Device type		PCI-E Endpoint Device
+	Port			0
+	Version			1.0
+	Link width		1x (max 1x)
+Extended capabilities
+	Caps class		Advanced Error Reporting
+	Caps offset		0x100
+	Caps class		Device Serial Number
+	Caps offset		0x140
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	86 80 32 42 06 04 10 00 00 00 80 02 00 00 00 00 
+	10	04 00 60 D4 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 86 80 01 13 
+	30	00 00 00 00 C8 00 00 00 00 00 00 00 00 01 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 00 00 00 00 00 00 00 01 D0 23 C8 00 00 00 0D 
+	D0	05 E0 81 00 0C 30 E0 FE 00 00 00 00 A0 49 00 00 
+	E0	10 00 01 00 C0 8E 00 10 10 08 19 00 11 9C 06 00 
+	F0	43 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00 
+	100	01 00 01 14 00 00 00 00 00 00 00 00 11 20 06 00 
+	110	41 20 00 00 00 20 00 00 00 00 00 00 00 00 00 00 
+	120	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	130	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Description			OHCI FireWire Controller
+Location			bus 6 (0x06), device 2 (0x02), function 0 (0x00)
+Common header
+	Vendor ID		0x1180
+	Model ID		0x0832
+	Revision ID		0x05
+	PI			0x10
+	SubClass		0x00
+	BaseClass		0x0C
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 0 (memory)	0xD3500000
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x10
+	Int. Pin		0x01
+PCI capability
+	Caps class		Power Management
+	Caps offset		0xDC
+	Caps version		1.1
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	80 11 32 08 06 00 10 02 05 10 00 0C 00 00 80 00 
+	10	00 00 50 D3 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 DC 00 00 00 00 00 00 00 10 01 02 04 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	00 80 80 16 00 00 04 00 00 20 00 00 66 66 32 12 
+	90	48 60 66 10 00 00 02 00 03 80 00 00 00 01 00 00 
+	A0	00 00 00 00 00 00 00 00 30 00 00 00 4D 10 3F 90 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 04 
+	C0	00 30 00 00 30 03 00 00 0C 00 00 82 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 01 00 02 C8 
+	E0	00 C0 00 48 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Description			System Device
+Location			bus 6 (0x06), device 2 (0x02), function 1 (0x01)
+Common header
+	Vendor ID		0x1180
+	Model ID		0x0822
+	Revision ID		0x22
+	PI			0x00
+	SubClass		0x05
+	BaseClass		0x08
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 0 (memory)	0xD3500900
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x11
+	Int. Pin		0x02
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x80
+	Caps version		1.1
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	80 11 22 08 06 00 10 02 22 00 05 08 00 00 80 00 
+	10	00 09 50 D3 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 80 00 00 00 00 00 00 00 11 02 00 00 
+	40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	01 00 02 FE 00 40 00 48 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	B0	04 00 03 00 00 00 00 00 00 00 00 00 A0 00 00 00 
+	C0	00 30 00 00 30 03 00 00 0C 00 00 82 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	A1 21 C0 01 00 00 00 00 40 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 80 00 20 30 00 00 00 00 
+
+Description			System Device
+Location			bus 6 (0x06), device 2 (0x02), function 2 (0x02)
+Common header
+	Vendor ID		0x1180
+	Model ID		0x0592
+	Revision ID		0x12
+	PI			0x00
+	SubClass		0x80
+	BaseClass		0x08
+	Cache Line		0x00
+	Latency			0x00
+	Header			0x80
+PCI header
+	Address 0 (memory)	0xD3500800
+	Subvendor ID		0x104D
+	Subsystem ID		0x903F
+	Int. Line		0x11
+	Int. Pin		0x02
+PCI capability
+	Caps class		Power Management
+	Caps offset		0x80
+	Caps version		1.1
+PCI registers	
+		00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 
+	00	80 11 92 05 06 00 10 02 12 00 80 08 00 00 80 00 
+	10	00 08 50 D3 00 00 00 00 00 00 00 00 00 00 00 00 
+	20	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	30	00 00 00 00 80 00 00 00 00 00 00 00 11 02 00 00 
+	40	00 00 03 00 00 00 00 00 00 00 02 00 00 00 00 00 
+	50	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	70	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	80	01 00 02 FE 00 40 00 48 00 00 00 00 00 00 00 00 
+	90	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	A0	00 00 00 00 00 00 00 00 00 00 00 00 4D 10 3F 90 
+	B0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	C0	00 30 00 00 30 03 00 00 0C 00 00 82 00 00 00 00 
+	D0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	E0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+	F0	00 00 00 00 00 00 00 00 80 00 80 30 00 00 00 00 
+
+
+DMI
+-------------------------------------------------------------------------
+
+SMBIOS Version			2.4
+
+DMI BIOS		
+	vendor			INSYDE
+	version			R2060Q2
+	date			09/01/2009
+	ROM size		1024 KB
+
+DMI System Information		
+	manufacturer		Sony Corporation
+	product			VGN-CS52JB_W
+	version			C103HM3S
+	serial			28217014-1019658
+	UUID			{60405269-84A1-DB11-8C68-001DBA797A32}
+	SKU			N/A
+	family			N/A
+
+DMI Baseboard		
+	vendor			Sony Corporation
+	model			VAIO
+	revision		N/A
+	serial			N/A
+
+DMI System Enclosure		
+	manufacturer		Sony Corporation
+	chassis type		Notebook
+	chassis serial		N/A
+
+DMI OEM Strings		
+	string[0]		0000040982
+	string[1]		FNC-EXTB
+	string[2]		824428DB13687A4FC9EAE8C9E5E06
+	string[3]		Reserved
+	string[4]		Reserved
+
+DMI Processor		
+	manufacturer		GenuineIntel
+	model			Intel(R) Core(TM)2 Duo CPU     P8600  @ 2.40GHz
+	clock speed		2400.0 MHz
+	FSB speed		266.0 MHz
+	multiplier		9.0x
+
+DMI Physical Memory Array		
+	location		Motherboard
+	usage			System Memory
+	correction		None
+	max# of devices		2
+
+DMI Memory Device		
+	designation		SODIMM1
+	format			SODIMM
+	type			DDR2
+	total width		64 bits
+	data width		64 bits
+	size			2 GB
+
+DMI Memory Device		
+	designation		SODIMM2
+	format			SODIMM
+	type			DDR2
+	total width		64 bits
+	data width		64 bits
+	size			2 GB
+
+
+Storage
+-------------------------------------------------------------------------
+
+Drive	0
+	Name			TOSHIBA MK3254GSY
+	Revision		LE001A  
+	Serial			           59UNT0KCT
+	Capacity		298.1 GB
+	Type			Fixed
+	Bus Type		ATA (3)
+	Features		SMART
+	Volume			c:\, 120.0 GBytes (61.5 percent available)
+	Volume			f:\, 168.0 GBytes (86.6 percent available)
+
+USB Devices
+-------------------------------------------------------------------------
+
+USB Device			FeliCa Port/PaSoRi, class=0xFF, subclass=0x00, vendor=0x054C, product=0x01BB
+USB Device			ALPS-UGPZ9-BCM2046, class=0xE0, subclass=0x01, vendor=0x044E, product=0x3017
+
+Graphics
+-------------------------------------------------------------------------
+
+Number of adapters		1
+
+Graphic APIs
+-------------------------------------------------------------------------
+
+API				D3D
+API				Intel I/O
+
+Display Adapters
+-------------------------------------------------------------------------
+
+Display adapter 0	
+	ID			0x4000000
+	Name			Mobile Intel(R) 4 Series Express Chipset Family
+	Board Manufacturer	0x104D (0x903F)
+	PCI device		bus 0 (0x0), device 2 (0x2), function 0 (0x0)
+	Vendor ID		0x8086 (0x104D)
+	Model ID		0x2A42 (0x903F)
+	Revision ID		0x7
+	Performance Level	0
+
+Win32_VideoController		AdapterRAM = 0x73D7D000 (1943523328)
+Win32_VideoController		DriverVersion = 8.15.10.2302
+Win32_VideoController		DriverVersion = 8.15.10.2302
+Win32_VideoController		DriverDate = 02/11/2011
+Win32_VideoController		DriverDate = 02/11/2011
+
+Monitor 0	
+	Model			 ()
+	ID			MS_0040
+	Serial			
+	Manufacturing Date	Week 0, Year 2002
+	Size			0.0 inches
+	Max Resolution		1280 x 800 @ 60 Hz
+	Horizontal Freq. Range	0-171 kHz
+	Vertical Freq. Range	0-60 Hz
+	Max Pixel Clock		70 MHz
+	Gamma Factor		3.5
+
+
+Software
+-------------------------------------------------------------------------
+
+Windows Version			Microsoft Windows 7 (6.1) Home Premium Edition 64-bit  Service Pack 1 (Build 7601) 
+DirectX Version			11.0
+
+
+Register Spaces
+-------------------------------------------------------------------------
+
+Register space			PCI
+Register space			PCI #2
+Register space			PCI Express, base address = 0x0F8000000
+Register space			SMBus, base address = 0x06000
