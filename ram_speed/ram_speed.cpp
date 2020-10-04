@@ -555,8 +555,35 @@ std::string getOutFilename() {
     return outfilename;
 }
 
+#define SSTRING(str) STRING(str)
+#define STRING(str) #str
+
 std::string printVersion() {
-    return std::string("ram_speed " RAM_SPEED_VERSION " (asm: ") + std::string(ENABLE_ASM ? "on" : "off") + ")";
+    return std::string("ram_speed " RAM_SPEED_VERSION
+#if defined(_MSC_VER)
+        " (VC " SSTRING(_MSC_VER)
+#elif defined(__clang__)
+        " (clang " SSTRING(__clang_major__) "." SSTRING(__clang_minor__) "." SSTRING(__clang_patchlevel__)
+#elif defined(__GNUC__)
+        " (gcc " SSTRING(__GNUC__) "." SSTRING(__GNUC_MINOR__) "." SSTRING(__GNUC_PATCHLEVEL__)
+#else
+        " (unknown"
+#endif
+        "/"
+#ifdef _WIN32
+        "Win"
+#elif  __linux
+        "Linux"
+#else
+        "unknown"
+#endif
+        "/"
+#if ENABLE_ASM
+     "asm:on"
+#else
+     "asm:off"
+#endif
+     ")");
 }
 
 std::string printHelp() {
