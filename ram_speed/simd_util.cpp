@@ -27,6 +27,10 @@
 
 #include <stdint.h>
 #include "simd_util.h"
+#include "rgy_osdep.h"
+#if defined(_WIN32) || defined(_WIN64)
+#include <intrin.h>
+#endif
 
 uint32_t get_availableSIMD() {
     int CPUInfo[4];

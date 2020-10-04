@@ -35,6 +35,9 @@
 #include "simd_util.h"
 #include "rgy_osdep.h"
 #include "rgy_tchar.h"
+#if defined(_WIN32) || defined(_WIN64)
+#include <intrin.h>
+#endif
 
 int getCPUName(char *buffer, size_t nSize) {
     int CPUInfo[4] = {-1};
