@@ -612,6 +612,8 @@ int main(int argc, char **argv) {
     bool check_latency_intercore = true;
     bool check_bandwidth_read = true;
     bool check_bandwidth_write = true;
+    int interval_sleep = 0;
+    int min_latency_tests = 5;
     std::string outfilename;
     for (int i = 1; i < argc; i++) {
         if (std::string(argv[i]) == "--output" || std::string(argv[i]) == "-o") {
@@ -666,6 +668,26 @@ int main(int argc, char **argv) {
             check_bandwidth_write = false;
             continue;
         }
+        if (std::string(argv[i]) == "--interval-sleep") {
+            try {
+                interval_sleep = std::stoi(argv[i + 1]);
+            } catch (...) {
+                fprintf(stderr, "Invalid param for --interval-sleep.");
+                exit(1);
+            }
+            i++;
+            continue;
+        }
+        if (std::string(argv[i]) == "--min-latency-tests") {
+            try {
+                min_latency_tests = std::stoi(argv[i + 1]);
+            } catch (...) {
+                fprintf(stderr, "Invalid param for --min-latency-tests.");
+                exit(1);
+            }
+            i++;
+            continue;
+        }
     }
     if (outfilename.length() == 0) {
         outfilename = getOutFilename();
@@ -696,6 +718,9 @@ int main(int argc, char **argv) {
                 print(fp, "\n");
             }
             fflush(fp);
+            if (interval_sleep > 0) {
+                std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+            }
         }
 
         const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8u) * 32 * 1024 * 1024));
@@ -718,17 +743,22 @@ int main(int argc, char **argv) {
             for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
                 const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
                 print(fp, "%6zd", check_size >> 10);
-                int test_count = 3;
-                if      (check_size <       256 * 1024) test_count = 31;
-                else if (check_size <  1 * 1024 * 1024) test_count = 15;
-                else if (check_size <  2 * 1024 * 1024) test_count =  9;
-                else if (check_size <  4 * 1024 * 1024) test_count =  7;
-                else if (check_size < 16 * 1024 * 1024) test_count =  5;
+                int test_count = 5;
+                if      (check_size <       256 * 1024) test_count = 61;
+                else if (check_size <  1 * 1024 * 1024) test_count = 31;
+                else if (check_size <  2 * 1024 * 1024) test_count = 21;
+                else if (check_size <  4 * 1024 * 1024) test_count = 15;
+                else if (check_size < 16 * 1024 * 1024) test_count = 11;
+                test_count = std::min(test_count, min_latency_tests);
                 for (auto test : latency_tests) {
                     double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
                     print(fp, ", %.2f", latency);
                 }
                 print(fp, "\n");
+                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                    fflush(fp);
+                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+                }
             }
             fflush(fp);
         }
@@ -748,6 +778,10 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
                 }
                 fprintf(fp, "\n");
+                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                    fflush(fp);
+                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+                }
             }
             fflush(fp);
         }
@@ -767,6 +801,10 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
                 }
                 fprintf(fp, "\n");
+                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                    fflush(fp);
+                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+                }
             }
             fclose(fp);
         }
