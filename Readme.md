@@ -32,15 +32,15 @@ Linux (x64)
 | Core2Duo P8600        | 2C/2T   | DDR2-800 2ch     |  6-6-6-18-?   |
 
 ### RAM/Cache bandwidth MT
-Result of the bandwidth test, using all physical cores on the CPU.
+Result of the bandwidth test, using all physical cores on the CPU.  
 ![RAM/Cache bandwidth MT](results/ram_cache_bandwidth_MT.png) 
 
 ### RAM/Cache bandwidth ST
-Result of the bandwidth test, using a single cores on the CPU.
+Result of the bandwidth test, using a single cores on the CPU.  
 ![RAM/Cache bandwidth ST](results/ram_cache_bandwidth_ST.png) 
 
 ### RAM bandwidth
-Result of the bandwidth test, checking the bandwidth of the largest size tested.
+Result of the bandwidth test, checking the bandwidth of the largest size tested.  
 ![RAM bandwidth](results/ram_bandwidth.png) 
 
 ### RAM/Cache latency cachline random
