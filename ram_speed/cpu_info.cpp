@@ -282,158 +282,33 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 
 const int TEST_COUNT = 5000;
 
-#if ENABLE_ASM
-#ifdef __cplusplus
-extern "C" {
-#endif
-    extern int runl_por(int loop_count);
-#ifdef __cplusplus
-}
-#endif
-#else
-int runl_por(int loop_count) {
+RGY_NOINLINE
+int64_t runl_por(int loop_count, int& dummy_dep) {
+    unsigned int dummy;
+    const auto ts = __rdtscp(&dummy);
     int i = loop_count;
+#define ADD_XOR { i += loop_count; i ^= loop_count; }
+#define ADD_XOR4 {ADD_XOR;ADD_XOR;ADD_XOR;ADD_XOR;}
+#define ADD_XOR16 {ADD_XOR4;ADD_XOR4;ADD_XOR4;ADD_XOR4;}
     do {
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
-        i += loop_count;
-        i ^= loop_count;
+        ADD_XOR16;
+        ADD_XOR16;
+        ADD_XOR16;
+        ADD_XOR16;
         loop_count--;
     } while (loop_count > 0);
-    return i;
+    const auto te = __rdtscp(&dummy);
+    dummy_dep = i;
+    return te - ts;
 }
-#endif
 
 static double get_tick_per_clock() {
     const int outer_loop_count = 1000;
     const int inner_loop_count = TEST_COUNT;
-    auto tick_min = runl_por(inner_loop_count);
+    int dummy = 0;
+    auto tick_min = runl_por(inner_loop_count, dummy);
     for (int i = 0; i < outer_loop_count; i++) {
-        auto ret = runl_por(inner_loop_count);
+        auto ret = runl_por(inner_loop_count, dummy);
         tick_min = std::min(tick_min, ret);
     }
     return tick_min / (128.0 * inner_loop_count);
@@ -442,9 +317,10 @@ static double get_tick_per_clock() {
 static double get_tick_per_sec() {
     const int nMul = 100;
     const int outer_loop_count = TEST_COUNT * nMul;
-    runl_por(outer_loop_count);
+    int dummy = 0;
+    runl_por(outer_loop_count, dummy);
     auto start = std::chrono::high_resolution_clock::now();
-    auto tick = runl_por(outer_loop_count);
+    auto tick = runl_por(outer_loop_count, dummy);
     auto fin = std::chrono::high_resolution_clock::now();
     double second = std::chrono::duration_cast<std::chrono::microseconds>(fin - start).count() * 1e-6;
     return tick / second;
@@ -467,11 +343,6 @@ bool check_rdtscp_available() {
 //__rdtscが定格クロックに基づいた値を返すのを利用して、実際の動作周波数を得る
 //やや時間がかかるので注意
 double getCPUMaxTurboClock() {
-    double defaultClock = getCPUDefaultClock();
-    if (0.0 >= defaultClock) {
-        return 0.0;
-    }
-
     //http://instlatx64.atw.hu/
     //によれば、Sandy/Ivy/Haswell/Silvermont
     //いずれでもサポートされているのでノーチェックでも良い気がするが...
@@ -479,17 +350,17 @@ double getCPUMaxTurboClock() {
     int CPUInfo[4] ={ -1 };
     __cpuid(CPUInfo, 0x80000007);
     if (0 == (CPUInfo[3] & (1<<8))) {
-        return defaultClock;
+        return 0.0;
     }
     //rdtscp命令のチェック (Fn:8000_0001:EDX27)
     __cpuid(CPUInfo, 0x80000001);
     if (0 == (CPUInfo[3] & (1<<27))) {
-        return defaultClock;
+        return 0.0;
     }
 #if defined(_WIN32) || defined(_WIN64)
     //例外が発生するなら処理を中断する
     if (!check_rdtscp_available()) {
-        return defaultClock;
+        return 0.0;
     }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 
@@ -511,17 +382,19 @@ int getCPUInfo(TCHAR *buffer, size_t nSize) {
     } else {
         double defaultClock = getCPUDefaultClockFromCPUName();
         bool noDefaultClockInCPUName = (0.0 >= defaultClock);
+        const double maxFrequency = getCPUMaxTurboClock();
         if (defaultClock > 0.0) {
             if (noDefaultClockInCPUName) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" @ %.2fGHz"), defaultClock);
             }
-            double maxFrequency = getCPUMaxTurboClock();
             //大きな違いがなければ、TurboBoostはないものとして表示しない
             if (maxFrequency / defaultClock > 1.01) {
                 _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [TB: %.2fGHz]"), maxFrequency);
             }
-            _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
+        } else if (maxFrequency > 0.0) {
+            _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [%.2fGHz]"), maxFrequency);
         }
+        _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
     }
     return ret;
 }
