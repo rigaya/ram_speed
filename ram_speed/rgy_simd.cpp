@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2014-2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,12 +25,16 @@
 //
 // --------------------------------------------------------------------------------------------
 
-#include <stdint.h>
-#include "simd_util.h"
+#include <cstdint>
 #include "rgy_osdep.h"
-#if defined(_WIN32) || defined(_WIN64)
+#include "rgy_simd.h"
+#include "rgy_arch.h"
+#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
+#if _MSC_VER
 #include <intrin.h>
-#endif
+#else
+#include <x86intrin.h>
+#endif //_MSC_VER
 
 uint32_t get_availableSIMD() {
     int CPUInfo[4];
@@ -67,3 +71,8 @@ uint32_t get_availableSIMD() {
     }
     return simd;
 }
+#else
+uint32_t get_availableSIMD() {
+    return NONE;
+}
+#endif

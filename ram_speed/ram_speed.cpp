@@ -39,7 +39,7 @@
 #include <array>
 
 #include "cpu_info.h"
-#include "simd_util.h"
+#include "rgy_simd.h"
 #include "ram_speed.h"
 #include "ram_speed_util.h"
 

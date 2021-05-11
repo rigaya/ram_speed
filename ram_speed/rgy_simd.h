@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2014-2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-// --------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
 
-#ifndef __SIMD_UTIL_H__
-#define __SIMD_UTIL_H__
+#pragma once
+#ifndef __RGY_SIMD_H__
+#define __RGY_SIMD_H__
 
-#include <stdint.h>
+#ifndef _MSC_VER
+
+#ifndef __forceinline
+#define __forceinline __attribute__((always_inline))
+#endif
+
+#endif //#ifndef _MSC_VER
 
 enum {
     NONE       = 0x0000,
@@ -51,6 +58,6 @@ enum {
     AVX512VBMI = 0x10000,
 };
 
-uint32_t get_availableSIMD();
+unsigned int get_availableSIMD();
 
-#endif //__SIMD_UTIL_H__
+#endif //__RGY_SIMD_H__

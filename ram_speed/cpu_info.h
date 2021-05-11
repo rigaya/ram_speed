@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc/VCEEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2014-2020 rigaya
+// Copyright (c) 2011-2020 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,23 +29,17 @@
 #define _CPU_INFO_H_
 
 #include <stdint.h>
-#include "rgy_osdep.h"
 #include "rgy_tchar.h"
+#include "rgy_osdep.h"
 
 typedef struct cache_info_t {
-    uint16_t count;
-    uint8_t  level;
-    uint8_t  associativity;
-    uint16_t linesize;
-    uint16_t type;
+    uint32_t count;
+    uint32_t level;
+    uint32_t associativity;
+    uint32_t linesize;
+    uint32_t type;
     uint32_t size;
 } cache_info_t;
-
-typedef struct {
-    int processor_id;
-    int core_id;
-    int socket_id;
-} processor_info_t;
 
 typedef struct {
     uint32_t nodes;
@@ -53,14 +47,19 @@ typedef struct {
     uint32_t logical_cores;
     uint32_t max_cache_level;
     cache_info_t caches[4];
-    processor_info_t proc_list[1024];
 } cpu_info_t;
 
 
-bool get_cpu_info(cpu_info_t *cpu_info);
-
 int getCPUName(char *buffer, size_t nSize);
+bool get_cpu_info(cpu_info_t *cpu_info);
+cpu_info_t get_cpu_info();
+
+#if ENCODER_QSV
+#include "mfxvideo++.h"
+int getCPUInfo(TCHAR *buffer, size_t nSize, MFXVideoSession *pSession = nullptr);
+#else
 int getCPUInfo(TCHAR *buffer, size_t nSize);
+#endif
 
 template <size_t size>
 int inline getCPUInfo(TCHAR(&buffer)[size]) {
@@ -69,5 +68,14 @@ int inline getCPUInfo(TCHAR(&buffer)[size]) {
 
 double getCPUDefaultClock();
 double getCPUMaxTurboClock();
+
+typedef struct PROCESS_TIME {
+    uint64_t creation, exit, kernel, user;
+} PROCESS_TIME;
+
+BOOL GetProcessTime(PROCESS_TIME *time);
+BOOL GetProcessTime(HANDLE hProcess, PROCESS_TIME *time);
+double GetProcessAvgCPUUsage(HANDLE hProcess, PROCESS_TIME *start = nullptr);
+double GetProcessAvgCPUUsage(PROCESS_TIME *start = nullptr);
 
 #endif //_CPU_INFO_H_

@@ -1,0 +1,294 @@
+#!/bin/bash
+
+
+CNF_LOG=config.log
+
+cnf_write()
+{
+    echo "$*"
+    echo "$*" >> ${CNF_LOG}
+}
+cnf_print()
+{
+    printf "$*"
+    echo "$*" >> ${CNF_LOG}
+}
+
+write_config_mak()
+{
+    cnf_write $1
+    echo $1 >> config.mak
+}
+
+cxx_check()
+{
+    echo "" >> ${CNF_LOG}
+    if [ -n "$1" ]; then
+        printf "checking for $1..."
+        echo "### - checking for $1... --------------" >> ${CNF_LOG}
+    else 
+        echo "### - test start --------------" >> ${CNF_LOG}
+    fi
+    echo "#include <iostream>" > cxx_check.c
+    if [ -n "$3" ]; then
+        echo "#include <$3>" >> cxx_check.c
+    fi 
+    if [ -n "$4" ]; then
+        echo "extern \"C\" {" >> cxx_check.c
+        echo "#include <$4>" >> cxx_check.c
+        echo "}" >> cxx_check.c
+    fi 
+    echo "int main(void){ $5; std::cout << \"Hello World!\" << std::endl; return 0;}" >> cxx_check.c
+    CXX_CMD="$CXX -w cxx_check.c $2 -o cxx_check"
+    echo "------ command ------------" >> ${CNF_LOG}
+    echo ${CXX_CMD} >> ${CNF_LOG}
+    echo "------ test ---------------" >> ${CNF_LOG}
+    cat cxx_check.c >> ${CNF_LOG}
+    echo "---------------------------" >> ${CNF_LOG}
+    $CXX_CMD 2>> ${CNF_LOG}
+    #$CXX cxx_check.c $1 -o cxx_check
+    ret=$?
+    rm -f cxx_check*
+    echo "### - test fin -> ${ret} ----------" >> ${CNF_LOG}
+    return $ret
+}
+
+rm -f config.* .depend
+
+ENABLE_DEBUG=0
+ENABLE_ASM=0
+CXX=${CXX:-g++}
+AS=${CXX:-nasm}
+PROGRAM=ram_speed
+PREFIX=${PREFIX:-/usr/local}
+EXTRACXXFLAGS=""
+EXTRALDFLAGS=""
+SRCS=""
+SRCCUS=""
+X86_64=1
+ARM64=0
+NO_RDTSCP_INTRIN=0
+
+print_help()
+{
+cat << EOF
+Usage: ./configure [options]
+
+options:
+  -h, --help               print this message
+
+  --prefix=PREFIX          install nvencc into PREFIX/bin [${PREFIX}]
+
+  --cxx=CXX                set C++ compiler path [${CXX}]
+
+  --extra-cxxflags=XCFLAGS add XCFLAGS to CFLAGS
+  --extra-ldflags=XLDFLAGS add XLDFLAGS to LDFLAGS
+
+  --disable-asm            disable asm code
+EOF
+}
+
+SRCDIR=$(dirname "$0")
+if [ "${SRCDIR}" == "`pwd`" ]; then
+    SRCDIR=.
+fi
+
+for opt; do
+    optarg="${opt#*=}"
+    case "$opt" in
+         -h)
+            print_help
+            exit 0
+            ;;
+         --help)
+            print_help
+            exit 0
+            ;;
+        --prefix=*)
+            PREFIX="$optarg"
+            ;;
+        --cxx=*)
+            CXX="$optarg"
+            ;;
+        --extra-cxxflags=*)
+            EXTRACXXFLAGS="$optarg"
+            ;;
+        --extra-ldflags=*)
+            EXTRALDFLAGS="$optarg"
+            ;;
+        --enable-debug)
+            ENABLE_DEBUG=1
+            ;;
+        --disable-asm)
+            ENABLE_ASM=0
+            ;;
+        *)
+            cnf_write "unknown option $opt"
+            exit 1
+            ;;
+    esac
+done
+
+## log
+echo "" > ${CNF_LOG}
+echo "CNF_LOG=${CNF_LOG}" >> ${CNF_LOG}
+echo "ENABLE_DEBUG=${ENABLE_DEBUG}" >> ${CNF_LOG}
+echo "CXX=${CXX}" >> ${CNF_LOG}
+echo "PROGRAM=${PROGRAM}" >> ${CNF_LOG}
+echo "PREFIX=${PREFIX}" >> ${CNF_LOG}
+echo "EXTRACXXFLAGS=${EXTRACXXFLAGS}" >> ${CNF_LOG}
+echo "EXTRALDFLAGS=${EXTRALDFLAGS}" >> ${CNF_LOG}
+echo "X86_64=${X86_64}" >> ${CNF_LOG}
+echo "ENABLE_ASM=${ENABLE_ASM}" >> ${CNF_LOG}
+
+cnf_print "checking for ${CXX}..."
+if ! cxx_check "${CXX}" "" ; then
+    cnf_write "${CXX} does not work"
+    exit 1
+fi
+cnf_write "OK"
+
+if [ `echo | ${CXX} -E -dM - | egrep "WIN32|WIN64" | wc --lines` -ne 0 ]; then
+    cnf_write "This script does not support Windows platform."
+    cnf_write "For Windows, use Visual Studio."
+    exit 1 
+fi
+
+ASFLAGS=
+if [ `echo | ${CXX} -E -dM - | grep "__ARM_ARCH_ISA_A64" | wc --lines` -ne 0 ]; then
+    ARM64=1
+    X86_64=0
+    ENABLE_ASM=0
+elif [ `echo | ${CXX} -E -dM - | grep "x86_64" | wc --lines` -ne 0 ]; then
+    ARM64=0
+    X86_64=1
+    ASFLAGS="-I./ram_speed -DLINUX=1 -f elf64 -DARCH_X86_64=1"
+else
+    cnf_write "Unknown architecture!"
+    exit 1
+fi
+
+CXXINC=" \
+  -DLINUX -DUNIX -D_FILE_OFFSET_BITS=64 -D__USE_LARGEFILE64 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS
+"
+CXXFLAGS="-Wall -Wno-unknown-pragmas -Wno-unused -Wno-missing-braces -I./ram_speed"
+
+LDFLAGS="-L. -ldl -lstdc++ -lstdc++fs"
+if [ $ARM64 -ne 0 ]; then
+    CXXINC="${CXXINC} -DLINUX64"
+elif [ $X86_64 -ne 0 ]; then
+    CXXINC="${CXXINC} -DLINUX64 -m64"
+    LDFLAGS="${LDFLAGS} -m64"
+else
+    CXXINC="${CXXINC} -DLINUX32 -m32"
+    LDFLAGS="${LDFLAGS} -m32"
+fi
+
+
+if cxx_check "c++17" "${CXXFLAGS} -std=c++14 ${LDFLAGS}" ; then
+    cnf_write "OK"
+else
+    cnf_write "${CXX} does not work with -std=c++14"
+    exit 1
+fi
+
+if [ $X86_64 -ne 0 ]; then
+    if ! cxx_check "__rdtscp()" "${CXXFLAGS} ${EXTRACXXFLAGS} ${LDFLAGS}" "" "x86intrin.h" "unsigned int a = 0; auto i = __rdtscp(&a);" ; then
+        CXXFLAGS="${CXXFLAGS} -DNO_RDTSCP_INTRIN=1"
+        cnf_write "no"
+    else
+        cnf_write "yes"
+    fi
+
+    if ! cxx_check "_xgetbv()" "${CXXFLAGS} ${EXTRACXXFLAGS} ${LDFLAGS}" "" "x86intrin.h" "unsigned int a = 0; auto i = _xgetbv(a);" ; then
+        CXXFLAGS="${CXXFLAGS} -DNO_XGETBV_INTRIN=1"
+        cnf_write "no"
+    else
+        cnf_write "yes"
+    fi
+fi
+
+if cxx_check "-fPIE" "${CXXFLAGS} -fPIE ${LDFLAGS}" ; then
+    CXXFLAGS="$CXXFLAGS -fPIE"
+fi
+
+if [ ! $ENABLE_DEBUG -eq 0 ]; then
+    cnf_write "configuring for debug..."
+    CXXFLAGS="${CXXFLAGS} -O0 -g -D_DEBUG"
+else
+    cnf_write "configuring for speed..."
+    CXXFLAGS="${CXXFLAGS} -O3 -DNDEBUG=1"
+    if cxx_check "-mfpmath=sse" "${CXXFLAGS} -mfpmath=sse ${LDFLAGS}" ; then
+        CXXFLAGS="$CXXFLAGS -mfpmath=sse"
+        cnf_write "yes"
+    else
+        cnf_write "no"
+    fi
+    if cxx_check "-ffast-math" "${CXXFLAGS} -ffast-math ${LDFLAGS}" ; then
+        CXXFLAGS="$CXXFLAGS -ffast-math"
+        cnf_write "yes"
+    else
+        cnf_write "no"
+    fi
+    if cxx_check "-fomit-frame-pointer" "${CXXFLAGS} -fomit-frame-pointer ${LDFLAGS}" ; then
+        CXXFLAGS="$CXXFLAGS -fomit-frame-pointer"
+        cnf_write "yes"
+    else
+        cnf_write "no"
+    fi
+    #LDFLAGS="$LDFLAGS -Wl,-s"
+fi
+
+if [ -n $EXTRACXXFLAGS ]; then
+    if ! cxx_check "--extra-cflags" "${CXXFLAGS} ${EXTRACXXFLAGS} ${LDFLAGS}" ; then
+        cnf_write "--extra-cflags=${EXTRACXXFLAGS} does not work"
+        exit 1
+    fi
+    cnf_write "OK"
+fi
+
+if [ -n $EXTRALDFLAGS ]; then
+    if ! cxx_check "--extra-ldflags" "${CXXFLAGS} ${EXTRACXXFLAGS} ${LDFLAGS} ${EXTRALDFLAGS}" ; then
+        cnf_write "--extra-ldflags=${EXTRALDFLAGS} does not work"
+        exit 1
+    fi
+    cnf_write "OK"
+fi
+
+
+SRC_RAMSPEED_CPP=" \
+ram_speed.cpp cpu_info.cpp rgy_simd.cpp ram_speed_util.cpp rgy_codepage.cpp \
+"
+
+SRC_RAMSPEED_ASM=" \
+ram_speed_x64.asm \
+"
+
+for src in $SRC_RAMSPEED_CPP; do
+    SRCS="$SRCS ram_speed/$src"
+done
+
+for src in $SRC_RAMSPEED_ASM; do
+    SRCASMS="$SRCS ram_speed/$src"
+done
+
+cnf_write ""
+cnf_write "Creating config.mak, rgy_config.h..."
+echo "SRCS = $SRCS" >> config.mak
+echo "SRCASMS = $SRCASMS" >> config.mak
+write_config_mak "SRCDIR = $SRCDIR"
+write_config_mak "CXX  = $CXX"
+write_config_mak "AS   = $AS"
+write_config_mak "LD   = $CXX"
+write_config_mak "PROGRAM = $PROGRAM"
+write_config_mak "ENABLE_DEBUG = $ENABLE_DEBUG"
+write_config_mak "ENABLE_ASM = $ENABLE_ASM"
+write_config_mak "CXXFLAGS = $CXXFLAGS $CXXINC $EXTRACXXFLAGS"
+write_config_mak "ASFLAGS = $ASFLAGS"
+write_config_mak "LDFLAGS = $LDFLAGS"
+write_config_mak "PREFIX = $PREFIX"
+echo "X86_64 = ${X86_64}"
+
+cnf_write "successfully generated config.mak"
+
+

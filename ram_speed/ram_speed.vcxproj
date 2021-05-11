@@ -182,16 +182,16 @@
     <ClCompile Include="ram_speed.cpp" />
     <ClCompile Include="ram_speed_util.cpp" />
     <ClCompile Include="rgy_codepage.cpp" />
-    <ClCompile Include="simd_util.cpp" />
+    <ClCompile Include="rgy_simd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_info.h" />
     <ClInclude Include="ram_speed.h" />
     <ClInclude Include="rgy_codepage.h" />
     <ClInclude Include="rgy_osdep.h" />
+    <ClInclude Include="rgy_simd.h" />
     <ClInclude Include="rgy_tchar.h" />
     <ClInclude Include="ram_speed_util.h" />
-    <ClInclude Include="simd_util.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ram_speed_x64.asm">

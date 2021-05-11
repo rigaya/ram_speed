@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2011-2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -123,6 +123,9 @@ static inline char *strcpy_s(char *dst, size_t size, const char *src) {
 static inline char *strcpy_s(char *dst, const char *src) {
     return strcpy(dst, src);
 }
+static inline char *strncpy_s(char *dst, size_t numberOfElements, const char *src, size_t count) {
+    return strncpy(dst, src, count);
+}
 static inline char *strcat_s(char *dst, size_t size, const char *src) {
     return strcat(dst, src);
 }
@@ -136,41 +139,6 @@ static inline int _vsprintf_s(char *buffer, size_t size, const char *format, va_
 #define _strnicmp strncasecmp
 #define stricmp strcasecmp
 #define _stricmp stricmp
-
-static inline void __cpuid(int cpuInfo[4], int param) {
-    int eax = 0, ebx = 0, ecx = 0, edx = 0;
-     __asm("xor %%ecx, %%ecx\n\t"
-           "cpuid" : "=a"(eax), "=b" (ebx), "=c"(ecx), "=d"(edx)
-                   : "0"(param));
-    cpuInfo[0] = eax;
-    cpuInfo[1] = ebx;
-    cpuInfo[2] = ecx;
-    cpuInfo[3] = edx;
-}
-
-#ifndef _xgetbv
-static inline unsigned long long _xgetbv(unsigned int index) {
-  unsigned int eax, edx;
-  __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
-  return ((unsigned long long)edx << 32) | eax;
-}
-#endif
-
-#ifndef __rdtscp
-static inline uint64_t __rdtscp(uint32_t *Aux) {
-    uint32_t aux;
-    uint64_t rax,rdx;
-    asm volatile ( "rdtscp\n" : "=a" (rax), "=d" (rdx), "=c" (aux) : : );
-    *Aux = aux;
-    return (rdx << 32) + rax;
-}
-#endif //#if NO_RDTSCP_INTRIN
-
-//uint64_t __rdtsc() {
-//    unsigned int eax, edx;
-//    __asm__ volatile("rdtsc" : "=a"(eax), "=d"(edx));
-//    return ((uint64_t)edx << 32) | eax;
-//}
 
 static short _InterlockedIncrement16(volatile short *pVariable) {
     return __sync_add_and_fetch((volatile short*)pVariable, 1);
@@ -219,51 +187,6 @@ static inline int sprintf_s(char *dst, size_t size, const char* format, ...) {
     int ret = vsprintf(dst, format, args);
     va_end(args);
     return ret;
-}
-
-static inline char *_fullpath(char *dst, const char *path, size_t size) {
-    return realpath(path, dst);
-}
-
-static inline const char *PathFindExtension(const char *path) {
-    return strrchr(basename(path), '.');
-}
-
-static inline const char *PathFindFileName(const char *path) {
-    const int path_len = strlen(path) + 1;
-    char *const buffer = (char *)calloc(path_len, sizeof(buffer[0]));
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    memcpy(buffer, path, path_len);
-    char *ptr_basename = basename(buffer);
-    const char *ptr_ret = nullptr;
-    if (!(ptr_basename == nullptr || *ptr_basename == '.' || ptr_basename < buffer || buffer + path_len <= ptr_basename)) {
-        ptr_ret = path + (ptr_basename - buffer);
-    }
-    free(buffer);
-    return ptr_ret;
-}
-#define PathFindFileNameA PathFindFileName
-
-static inline int PathFileExists(const char *path) {
-    struct stat st;
-    return 0 == stat(path, &st) && !S_ISDIR(st.st_mode);
-}
-static inline int PathIsDirectory(const char *dir) {
-    struct stat st;
-    return 0 == stat(dir, &st) && S_ISDIR(st.st_mode);
-}
-static inline BOOL CreateDirectory(const char *dir, void *dummy) {
-    return mkdir(dir, S_IRWXU | S_IRWXG | S_IRWXO) == 0 ? 1 : 0;
-}
-#define PathFileExistsA PathFileExists
-#define PathIsDirectoryA PathIsDirectory
-#define CreateDirectoryA CreateDirectory
-#define PathFindExtensionA PathFindExtension
-
-static inline int PathIsUNC(const char *path) {
-    return 0;
 }
 
 static inline int fopen_s(FILE **pfp, const char *filename, const char *mode) {

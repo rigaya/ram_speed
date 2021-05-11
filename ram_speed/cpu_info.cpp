@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc/VCEEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2014-2020 rigaya
+// Copyright (c) 2011-2020 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,20 +27,33 @@
 
 #include <vector>
 #include <string>
+#include <fstream>
 #include <vector>
 #include <algorithm>
-#include <thread>
 #include <chrono>
-#include "cpu_info.h"
-#include "simd_util.h"
-#include "rgy_osdep.h"
+#include <thread>
+#include <mutex>
+#include <climits>
+#include <condition_variable>
 #include "rgy_tchar.h"
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
+#ifdef _MSC_VER
 #include <intrin.h>
+#else
+#include <x86intrin.h>
 #endif
+#include <emmintrin.h>
+#endif //#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
+#include "rgy_osdep.h"
+#include "rgy_arch.h"
 #include "ram_speed_util.h"
+#include "cpu_info.h"
+#if ENCODER_QSV
+#include "qsv_query.h"
+#endif
 
 int getCPUName(char *buffer, size_t nSize) {
+#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
     int CPUInfo[4] = {-1};
     __cpuid(CPUInfo, 0x80000000);
     unsigned int nExIds = CPUInfo[0];
@@ -91,12 +104,48 @@ int getCPUName(char *buffer, size_t nSize) {
     if (0 < strlen(buffer)) {
         char *last_ptr = buffer + strlen(buffer) - 1;
         if (' ' == *last_ptr)
-            last_ptr = 0;
+            *last_ptr = '\0';
     }
     return 0;
+#else
+    std::string arch;
+    std::string name;
+    memset(buffer, 0, 0x40);
+    FILE *fp = NULL;
+    const char *cmdline = "lscpu";
+    if ((fp = popen(cmdline, "r")) == NULL) {
+        return 1;
+    }
+    char buf[1024];
+    while (!feof(fp)) {
+        fgets(buf, sizeof(buf), fp);
+        if (strstr(buf, "Architecture:") != nullptr) {
+            //改行の削除
+            char *ptr = buf + strlen(buf) - 1;
+            if (*ptr == '\n') *ptr = '\0';
+            //Architectureの部分の取得
+            ptr = buf + strlen("Architecture:");
+            while (*ptr == ' ')
+                ptr++;
+            arch = ptr;
+        }
+        if (strstr(buf, "Model name:") != nullptr) {
+            //改行の削除
+            char *ptr = buf + strlen(buf) - 1;
+            if (*ptr == '\n') *ptr = '\0';
+            //Model nameの部分の取得
+            ptr = buf + strlen("Model name:");
+            while (*ptr == ' ')
+                ptr++;
+            name = ptr;
+        }
+    }
+    sprintf(buf, "%s (%s)", name.c_str(), arch.c_str());
+    return 0;
+#endif
 }
 
-#if defined(_WIN32) || defined(_WIN64)
+#if _MSC_VER
 static int getCPUName(wchar_t *buffer, size_t nSize) {
     int ret = 0;
     char *buf = (char *)calloc(nSize, sizeof(char));
@@ -104,13 +153,17 @@ static int getCPUName(wchar_t *buffer, size_t nSize) {
         buffer[0] = L'\0';
         ret = 1;
     } else {
-        if (0 == (ret = getCPUName(buf, nSize)))
-            MultiByteToWideChar(CP_ACP, 0, buf, -1, buffer, (DWORD)nSize);
+        if (0 == (ret = getCPUName(buf, nSize))) {
+            if (MultiByteToWideChar(CP_ACP, 0, buf, -1, buffer, (DWORD)nSize) == 0) {
+                buffer[0] = L'\0';
+                ret = 1;
+            }
+        }
         free(buf);
     }
     return ret;
 }
-#endif
+#endif //#if _MSC_VER
 
 double getCPUDefaultClockFromCPUName() {
     double defaultClock = 0.0;
@@ -127,9 +180,6 @@ double getCPUDefaultClockFromCPUName() {
 }
 
 #if defined(_WIN32) || defined(_WIN64)
-
-#include <Windows.h>
-#include <process.h>
 
 typedef BOOL (WINAPI *LPFN_GLPI)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
 
@@ -189,7 +239,7 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
                 cache->linesize = Cache->LineSize;
                 cache->size += Cache->Size;
                 cache->associativity = Cache->Associativity;
-                cpu_info->max_cache_level = (std::max<uint32_t>)(cpu_info->max_cache_level, cache->level);
+                cpu_info->max_cache_level = (std::max)(cpu_info->max_cache_level, cache->level);
             }
             break;
         }
@@ -211,9 +261,6 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 }
 
 #else //#if defined(_WIN32) || defined(_WIN64)
-#include <iostream>
-#include <fstream>
-
 bool get_cpu_info(cpu_info_t *cpu_info) {
     memset(cpu_info, 0, sizeof(cpu_info[0]));
     std::ifstream inputFile("/proc/cpuinfo");
@@ -222,66 +269,44 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
     std::string script_data = std::string(data_begin, data_end);
     inputFile.close();
 
-    std::vector<processor_info_t> processor_list;
-    processor_info_t info = { 0 };
-    info.processor_id = -1;
-
     for (auto line : split(script_data, "\n")) {
         auto pos = line.find("processor");
         if (pos != std::string::npos) {
             int i = 0;
             if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
-                if (info.processor_id >= 0) {
-                    processor_list.push_back(info);
-                }
-                info.processor_id = i;
+                cpu_info->logical_cores = (std::max)(cpu_info->logical_cores, i + 1u);
             }
             continue;
         }
-        pos = line.find("core id");
+        pos = line.find("cpu cores");
         if (pos != std::string::npos) {
             int i = 0;
             if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
-                info.core_id = i;
+                cpu_info->physical_cores = (std::max)(cpu_info->physical_cores, (uint32_t)i);
             }
             continue;
         }
-        pos = line.find("physical id");
+        pos = line.find("pyhisical id");
         if (pos != std::string::npos) {
             int i = 0;
             if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
-                info.socket_id = i;
+                cpu_info->nodes = (std::max)(cpu_info->nodes, i + 1u);
             }
             continue;
         }
     }
-    if (info.processor_id >= 0) {
-        processor_list.push_back(info);
-    }
-
-    std::sort(processor_list.begin(), processor_list.end(), [](const processor_info_t& a, const processor_info_t& b) {
-        if (a.socket_id != b.socket_id) return a.socket_id < b.socket_id;
-        if (a.core_id != b.core_id) return a.core_id < b.core_id;
-        return a.processor_id < b.processor_id;
-    });
-    int physical_core_count = 0;
-    uint64_t last_key = UINT64_MAX;
-    for (uint32_t i = 0; i < processor_list.size(); i++) {
-        uint64_t key = ((uint64_t)processor_list[i].socket_id << 32) | processor_list[i].core_id;
-        physical_core_count += key != last_key;
-        last_key = key;
-    }
-    memcpy(cpu_info->proc_list, processor_list.data(), sizeof(processor_list[0]) * processor_list.size());
-    cpu_info->nodes = processor_list.back().socket_id + 1;
-    cpu_info->physical_cores = physical_core_count;
-    cpu_info->logical_cores = processor_list.size();
     return true;
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 
+cpu_info_t get_cpu_info() {
+    cpu_info_t cpu;
+    get_cpu_info(&cpu);
+    return cpu;
+}
 
+#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
 const int TEST_COUNT = 5000;
-
 RGY_NOINLINE
 int64_t runl_por(int loop_count, int& dummy_dep) {
     unsigned int dummy;
@@ -302,8 +327,22 @@ int64_t runl_por(int loop_count, int& dummy_dep) {
     return te - ts;
 }
 
+//rdtscpを使うと0xc0000096例外 (一般ソフトウェア例外)を発する場合があるらしい
+//そこでそれを検出する
+bool check_rdtscp_available() {
+#if defined(_WIN32) || defined(_WIN64)
+    __try {
+        UINT dummy;
+        __rdtscp(&dummy);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+#endif //defined(_WIN32) || defined(_WIN64)
+    return true;
+}
+
 static double get_tick_per_clock() {
-    const int outer_loop_count = 1000;
+    const int outer_loop_count = 100;
     const int inner_loop_count = TEST_COUNT;
     int dummy = 0;
     auto tick_min = runl_por(inner_loop_count, dummy);
@@ -315,8 +354,7 @@ static double get_tick_per_clock() {
 }
 
 static double get_tick_per_sec() {
-    const int nMul = 100;
-    const int outer_loop_count = TEST_COUNT * nMul;
+    const int outer_loop_count = TEST_COUNT;
     int dummy = 0;
     runl_por(outer_loop_count, dummy);
     auto start = std::chrono::high_resolution_clock::now();
@@ -325,36 +363,28 @@ static double get_tick_per_sec() {
     double second = std::chrono::duration_cast<std::chrono::microseconds>(fin - start).count() * 1e-6;
     return tick / second;
 }
-
-#if defined(_WIN32) || defined(_WIN64)
-//rdtscpを使うと0xc0000096例外 (一般ソフトウェア例外)を発する場合があるらしい
-//そこでそれを検出する
-bool check_rdtscp_available() {
-    __try {
-        UINT dummy;
-        __rdtscp(&dummy);
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return false;
-    }
-    return true;
-}
-#endif //#if defined(_WIN32) || defined(_WIN64)
+#endif //#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
 
 //__rdtscが定格クロックに基づいた値を返すのを利用して、実際の動作周波数を得る
 //やや時間がかかるので注意
 double getCPUMaxTurboClock() {
+#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
+    static double turboClock = 0.0;
+    if (turboClock > 0.0) {
+        return turboClock;
+    }
     //http://instlatx64.atw.hu/
     //によれば、Sandy/Ivy/Haswell/Silvermont
     //いずれでもサポートされているのでノーチェックでも良い気がするが...
     //固定クロックのタイマーを持つかチェック (Fn:8000_0007:EDX8)
-    int CPUInfo[4] ={ -1 };
+    int CPUInfo[4] = { -1 };
     __cpuid(CPUInfo, 0x80000007);
-    if (0 == (CPUInfo[3] & (1<<8))) {
+    if (0 == (CPUInfo[3] & (1 << 8))) {
         return 0.0;
     }
     //rdtscp命令のチェック (Fn:8000_0001:EDX27)
     __cpuid(CPUInfo, 0x80000001);
-    if (0 == (CPUInfo[3] & (1<<27))) {
+    if (0 == (CPUInfo[3] & (1 << 27))) {
         return 0.0;
     }
 #if defined(_WIN32) || defined(_WIN64)
@@ -366,21 +396,31 @@ double getCPUMaxTurboClock() {
 
     const double tick_per_clock = get_tick_per_clock();
     const double tick_per_sec = get_tick_per_sec();
-    return (tick_per_sec / tick_per_clock) * 1e-9;
+    turboClock = (tick_per_sec / tick_per_clock) * 1e-9;
+    return turboClock;
+#else
+    return 0.0;
+#endif //#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
 }
 
 double getCPUDefaultClock() {
     return getCPUDefaultClockFromCPUName();
 }
 
-int getCPUInfo(TCHAR *buffer, size_t nSize) {
+int getCPUInfo(TCHAR *buffer, size_t nSize
+#if ENCODER_QSV
+    , MFXVideoSession *pSession
+#endif
+) {
     int ret = 0;
     buffer[0] = _T('\0');
     cpu_info_t cpu_info;
     if (getCPUName(buffer, nSize) || !get_cpu_info(&cpu_info)) {
+        buffer[0] = _T('\0');
         ret = 1;
     } else {
-        double defaultClock = getCPUDefaultClockFromCPUName();
+#if defined(_WIN32) || defined(_WIN64) //Linuxでは環境によっては、正常に動作しない場合がある
+        const double defaultClock = getCPUDefaultClockFromCPUName();
         bool noDefaultClockInCPUName = (0.0 >= defaultClock);
         const double maxFrequency = getCPUMaxTurboClock();
         if (defaultClock > 0.0) {
@@ -394,7 +434,63 @@ int getCPUInfo(TCHAR *buffer, size_t nSize) {
         } else if (maxFrequency > 0.0) {
             _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [%.2fGHz]"), maxFrequency);
         }
+#endif //#if defined(_WIN32) || defined(_WIN64)
         _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
+#if ENCODER_QSV && !FOR_AUO
+        int cpuGen = getCPUGen(pSession);
+        if (cpuGen != CPU_GEN_UNKNOWN) {
+            _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" <%s>"), CPU_GEN_STR[cpuGen]);
+        }
+#endif
     }
     return ret;
 }
+
+BOOL GetProcessTime(HANDLE hProcess, PROCESS_TIME *time) {
+#if defined(_WIN32) || defined(_WIN64)
+    SYSTEMTIME systime;
+    GetSystemTime(&systime);
+    return (NULL != hProcess
+        && GetProcessTimes(hProcess, (FILETIME *)&time->creation, (FILETIME *)&time->exit, (FILETIME *)&time->kernel, (FILETIME *)&time->user)
+        && (WAIT_OBJECT_0 == WaitForSingleObject(hProcess, 0) || SystemTimeToFileTime(&systime, (FILETIME *)&time->exit)));
+#else //#if defined(_WIN32) || defined(_WIN64)
+    struct tms tm;
+    times(&tm);
+    time->exit = time->creation;
+    time->creation = clock();
+    time->kernel = tm.tms_stime;
+    time->user = tm.tms_utime;
+    return 0;
+#endif //#if defined(_WIN32) || defined(_WIN64)
+}
+
+BOOL GetProcessTime(PROCESS_TIME *time) {
+#if defined(_WIN32) || defined(_WIN64)
+    return GetProcessTime(GetCurrentProcess(), time);
+#else
+    return GetProcessTime(NULL, time);
+#endif
+}
+
+double GetProcessAvgCPUUsage(HANDLE hProcess, PROCESS_TIME *start) {
+    PROCESS_TIME current = { 0 };
+    cpu_info_t cpu_info;
+    double result = 0;
+    if (NULL != hProcess
+        && get_cpu_info(&cpu_info)
+        && GetProcessTime(hProcess, &current)) {
+        uint64_t current_total_time = current.kernel + current.user;
+        uint64_t start_total_time = (nullptr == start) ? 0 : start->kernel + start->user;
+        result = (current_total_time - start_total_time) * 100.0 / (double)(cpu_info.logical_cores * (current.exit - ((nullptr == start) ? current.creation : start->exit)));
+    }
+    return result;
+}
+
+double GetProcessAvgCPUUsage(PROCESS_TIME *start) {
+#if defined(_WIN32) || defined(_WIN64)
+    return GetProcessAvgCPUUsage(GetCurrentProcess(), start);
+#else
+    return GetProcessAvgCPUUsage(NULL, start);
+#endif
+}
+
