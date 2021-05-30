@@ -50,11 +50,11 @@ uint32_t get_availableSIMD() {
     if ((CPUInfo[2] & 0x18000000) == 0x18000000) {
 #if _MSC_VER || defined(__AVX__)
         xgetbv = _xgetbv(0);
+#else
+        xgetbv = 0;
+#endif
         if ((xgetbv & 0x06) == 0x06)
             simd |= AVX;
-#else
-        simd |= AVX;
-#endif
     }
     __cpuid(CPUInfo, 7);
     if ((simd & AVX) && (CPUInfo[1] & 0x00000020)) {
