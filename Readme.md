@@ -57,9 +57,9 @@ Result of the bandwidth test, checking the bandwidth of the largest size tested.
 VC++2019 & nasm is required.
 
 ### Linux
-C++14 compiler is required, and also nasm is recommended.  
+C++17 compiler is required, and also [nasm](https://www.nasm.us/) is recommended.  
 
-However, it is possible to build without nasm, by changing ENABLE_ASM to 0 in makefile. In that case, using clang is recommended. 
+However, it is possible to build without nasm, by adding ```--disable-asm``` when running configure script.
 
 ## Precautions for using ram_speed
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.  
