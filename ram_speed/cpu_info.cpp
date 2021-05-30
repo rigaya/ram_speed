@@ -46,7 +46,8 @@
 #endif //#if defined(_M_IX86) || defined(_M_X64) || defined(__x86_64)
 #include "rgy_osdep.h"
 #include "rgy_arch.h"
-#include "ram_speed_util.h"
+#include "rgy_util.h"
+#include "rgy_version.h"
 #include "cpu_info.h"
 #if ENCODER_QSV
 #include "qsv_query.h"

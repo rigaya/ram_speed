@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2019-2020 rigaya
+// Copyright (c) 2019 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -163,7 +163,8 @@ const char *codepage_str(uint32_t codepage) {
     case CODE_PAGE_JIS:
         return "ISO2022JP";
     case CODE_PAGE_UTF8:
-    default:
         return "UTF-8";
+    default:
+        return nullptr;
     }
 }

@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2011-2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -63,6 +63,7 @@ typedef char TCHAR;
 #define _tcserror strerror
 #define _fgetts fgets
 #define _tcscpy strcpy
+#define _tcsncpy strncpy
 #define _tremove remove
 #define _trename rename
 #define _istalpha isalpha
@@ -85,4 +86,9 @@ static inline char *_tcscpy_s(TCHAR *dst, size_t size, const TCHAR *src) {
     return strcpy(dst, src);
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
+
+#include <string>
+
+typedef std::basic_string<TCHAR> tstring;
+
 #endif // __RGY_TCHAR_H__

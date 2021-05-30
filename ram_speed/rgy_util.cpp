@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,24 +25,12 @@
 //
 // ------------------------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <vector>
-#include <numeric>
-#include <memory>
-#include <sstream>
-#include <algorithm>
-#include <type_traits>
-#ifndef _MSC_VER
-#include <sys/sysinfo.h>
-#include <sys/utsname.h>
-#include <sys/wait.h>
+#include <filesystem>
+#include "rgy_util.h"
+#include "rgy_codepage.h"
+#if !(defined(_WIN32) || defined(_WIN64))
 #include <iconv.h>
 #endif
-#include "ram_speed_util.h"
-#include "cpu_info.h"
-#include "rgy_osdep.h"
-#include "rgy_codepage.h"
-#include "ram_speed.h"
 
 #pragma warning (push)
 #pragma warning (disable: 4100)
@@ -68,7 +56,9 @@ unsigned int wstring_to_string(const wchar_t *wstr, std::string& str, uint32_t c
         str = "";
         return 0;
     }
-    auto ic = iconv_open(codepage_str(codepage), "wchar_t"); //to, from
+    auto codepage_str_to = codepage_str(codepage);
+    if (codepage_str_to == nullptr) codepage_str_to = "UTF-8";
+    auto ic = iconv_open(codepage_str_to, "wchar_t"); //to, from
     auto input_len = (wcslen(wstr)+1) * 4;
     std::vector<char> buf(input_len, 0);
     memcpy(buf.data(), wstr, input_len);
@@ -200,7 +190,9 @@ unsigned int char_to_wstring(std::wstring& wstr, const char *str, uint32_t codep
         wstr = L"";
         return 0;
     }
-    auto ic = iconv_open("wchar_t", codepage_str(codepage)); //to, from
+    auto codepage_str_from = codepage_str(codepage);
+    if (codepage_str_from == nullptr) codepage_str_from = "UTF-8";
+    auto ic = iconv_open("wchar_t", codepage_str_from); //to, from
     if ((int64_t)ic == -1) {
         fprintf(stderr, "iconv_error\n");
     }
@@ -222,12 +214,16 @@ unsigned int char_to_string(std::string& dst, uint32_t codepage_to, const char *
         dst = "";
         return 0;
     }
+    auto codepage_str_from = codepage_str(codepage_from);
+    if (codepage_str_from == nullptr) codepage_str_from = "UTF-8";
+    auto codepage_str_to = codepage_str(codepage_to);
+    if (codepage_str_to == nullptr) codepage_str_to = "UTF-8";
     if (codepage_to == codepage_from
-        || strcmp(codepage_str(codepage_to), codepage_str(codepage_from)) == 0) {
+        || strcmp(codepage_str_to, codepage_str_from) == 0) {
         dst = src;
         return dst.length();
     }
-    auto ic = iconv_open(codepage_str(codepage_to), codepage_str(codepage_from)); //to, from
+    auto ic = iconv_open(codepage_str_to, codepage_str_from); //to, from
     if ((int64_t)ic == -1) {
         fprintf(stderr, "iconv_error\n");
     }
@@ -464,144 +460,84 @@ std::wstring trim(const std::wstring& string, const WCHAR* trim) {
     return result;
 }
 
-
 std::string GetFullPath(const char *path) {
-#if defined(_WIN32) || defined(_WIN64)
-    if (PathIsRelativeA(path) == FALSE)
-        return std::string(path);
-#endif //#if defined(_WIN32) || defined(_WIN64)
-    std::vector<char> buffer(strlen(path) + 1024, 0);
-    _fullpath(buffer.data(), path, buffer.size());
-    return std::string(buffer.data());
+    return std::filesystem::absolute(std::filesystem::path(strlen(path) ? path : ".")).lexically_normal().string();
 }
 #if defined(_WIN32) || defined(_WIN64)
 std::wstring GetFullPath(const WCHAR *path) {
-    if (PathIsRelativeW(path) == FALSE)
-        return std::wstring(path);
-
-    std::vector<WCHAR> buffer(wcslen(path) + 1024, 0);
-    _wfullpath(buffer.data(), path, buffer.size());
-    return std::wstring(buffer.data());
+    return std::filesystem::absolute(std::filesystem::path(wcslen(path) ? path : L".")).lexically_normal().wstring();
 }
 //ルートディレクトリを取得
 std::string PathGetRoot(const char *path) {
-    auto fullpath = GetFullPath(path);
-    std::vector<char> buffer(fullpath.length() + 1, 0);
-    memcpy(buffer.data(), fullpath.c_str(), fullpath.length() * sizeof(fullpath[0]));
-    PathStripToRootA(buffer.data());
-    return buffer.data();
+    return std::filesystem::path(GetFullPath(path)).root_name().string();
 }
 std::wstring PathGetRoot(const WCHAR *path) {
-    auto fullpath = GetFullPath(path);
-    std::vector<WCHAR> buffer(fullpath.length() + 1, 0);
-    memcpy(buffer.data(), fullpath.c_str(), fullpath.length() * sizeof(fullpath[0]));
-    PathStripToRootW(buffer.data());
-    return buffer.data();
+    return std::filesystem::path(GetFullPath(path)).root_name().wstring();
 }
 
 //パスのルートが存在するかどうか
 static bool PathRootExists(const char *path) {
     if (path == nullptr)
         return false;
-    return PathIsDirectoryA(PathGetRoot(path).c_str()) != 0;
+    return std::filesystem::exists(PathGetRoot(path));
 }
 static bool PathRootExists(const WCHAR *path) {
     if (path == nullptr)
         return false;
-    return PathIsDirectoryW(PathGetRoot(path).c_str()) != 0;
+    return std::filesystem::exists(PathGetRoot(path));
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 std::pair<int, std::string> PathRemoveFileSpecFixed(const std::string& path) {
-    const char *ptr = path.c_str();
-    const char *qtr = PathFindFileNameA(ptr);
-    if (qtr == ptr) {
-        return std::make_pair(0, path);
-    }
-    std::string newPath = path.substr(0, qtr - ptr - 1);
+    const auto newPath = std::filesystem::path(path).remove_filename().string();
     return std::make_pair((int)(path.length() - newPath.length()), newPath);
 }
 #if defined(_WIN32) || defined(_WIN64)
 std::pair<int, std::wstring> PathRemoveFileSpecFixed(const std::wstring& path) {
-    const WCHAR *ptr = path.c_str();
-    WCHAR *qtr = PathFindFileNameW(ptr);
-    if (qtr == ptr) {
-        return std::make_pair(0, path);
-    }
-    std::wstring newPath = path.substr(0, qtr - ptr - 1);
+    const auto newPath = std::filesystem::path(path).remove_filename().wstring();
     return std::make_pair((int)(path.length() - newPath.length()), newPath);
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 std::string PathRemoveExtensionS(const std::string& path) {
-    const char *ptr = path.c_str();
-    const char *qtr = PathFindExtensionA(ptr);
-    if (qtr == ptr || qtr == nullptr) {
-        return path;
-    }
-    return path.substr(0, qtr - ptr);
+    const auto lastdot = path.find_last_of(".");
+    if (lastdot == std::string::npos) return path;
+    return path.substr(0, lastdot);
 }
 #if defined(_WIN32) || defined(_WIN64)
 std::wstring PathRemoveExtensionS(const std::wstring& path) {
-    const WCHAR *ptr = path.c_str();
-    WCHAR *qtr = PathFindExtensionW(ptr);
-    if (qtr == ptr || qtr == nullptr) {
-        return path;
-    }
-    return path.substr(0, qtr - ptr);
+    const auto lastdot = path.find_last_of(L".");
+    if (lastdot == std::string::npos) return path;
+    return path.substr(0, lastdot);
 }
 std::string PathCombineS(const std::string& dir, const std::string& filename) {
-    std::vector<char> buffer(dir.length() + filename.length() + 128, '\0');
-    PathCombineA(buffer.data(), dir.c_str(), filename.c_str());
-    return std::string(buffer.data());
+    return std::filesystem::path(dir).append(filename).string();
 }
 std::wstring PathCombineS(const std::wstring& dir, const std::wstring& filename) {
-    std::vector<WCHAR> buffer(dir.length() + filename.length() + 128, '\0');
-    PathCombineW(buffer.data(), dir.c_str(), filename.c_str());
-    return std::wstring(buffer.data());
+    return std::filesystem::path(dir).append(filename).wstring();
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 //フォルダがあればOK、なければ作成する
 bool CreateDirectoryRecursive(const char *dir) {
-    if (PathIsDirectoryA(dir)) {
+    auto targetDir = std::filesystem::path(strlen(dir) ? dir : ".");
+    if (std::filesystem::exists(targetDir)) {
         return true;
     }
-#if defined(_WIN32) || defined(_WIN64)
-    if (!PathRootExists(dir)) {
-        return false;
-    }
-#endif //#if defined(_WIN32) || defined(_WIN64)
-    auto ret = PathRemoveFileSpecFixed(dir);
-    if (ret.first == 0) {
-        return false;
-    }
-    if (!CreateDirectoryRecursive(ret.second.c_str())) {
-        return false;
-    }
-    return CreateDirectoryA(dir, NULL) != 0;
+    return std::filesystem::create_directories(targetDir);
 }
 #if defined(_WIN32) || defined(_WIN64)
 bool CreateDirectoryRecursive(const WCHAR *dir) {
-    if (PathIsDirectoryW(dir)) {
+    auto targetDir = std::filesystem::path(wcslen(dir) ? dir : L".");
+    if (std::filesystem::exists(targetDir)) {
         return true;
     }
-    if (!PathRootExists(dir)) {
-        return false;
-    }
-    auto ret = PathRemoveFileSpecFixed(dir);
-    if (ret.first == 0) {
-        return false;
-    }
-    if (!CreateDirectoryRecursive(ret.second.c_str())) {
-        return false;
-    }
-    return CreateDirectoryW(dir, NULL) != 0;
+    return std::filesystem::create_directories(targetDir);
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
 
 bool check_ext(const TCHAR *filename, const std::vector<const char*>& ext_list) {
-    const TCHAR *target = PathFindExtension(filename);
-    if (target) {
+    const auto target = tolowercase(std::filesystem::path(filename).extension().string());
+    if (target.length() > 0) {
         for (auto ext : ext_list) {
-            if (0 == _tcsicmp(target, char_to_tstring(ext).c_str())) {
+            if (target == tolowercase(ext)) {
                 return true;
             }
         }
@@ -609,16 +545,141 @@ bool check_ext(const TCHAR *filename, const std::vector<const char*>& ext_list) 
     return false;
 }
 
+struct RGYSIPrefix {
+    char prefix;
+    bool inverse;
+    int64_t pow2;
+    int64_t pow10;
+
+    RGYSIPrefix(char prefix_, bool inverse_, int64_t pow2_, int64_t pow10_) :
+        prefix(prefix_), inverse(inverse_), pow2(pow2_), pow10(pow10_) {};
+};
+
+const auto RGY_SI_PREFIX_LIST = make_array<RGYSIPrefix>(
+    RGYSIPrefix{ 'a', true,  rgy_pow_int<60,int64_t>(2), rgy_pow_int<18,int64_t>(10) },
+    RGYSIPrefix{ 'f', true,  rgy_pow_int<50,int64_t>(2), rgy_pow_int<15,int64_t>(10) },
+    RGYSIPrefix{ 'p', true,  rgy_pow_int<40,int64_t>(2), rgy_pow_int<12,int64_t>(10) },
+    RGYSIPrefix{ 'n', true,  rgy_pow_int<30,int64_t>(2), rgy_pow_int< 9,int64_t>(10) },
+    RGYSIPrefix{ 'u', true,  rgy_pow_int<20,int64_t>(2), rgy_pow_int< 6,int64_t>(10) },
+    RGYSIPrefix{ 'm', true,  rgy_pow_int<10,int64_t>(2), rgy_pow_int< 3,int64_t>(10) },
+    RGYSIPrefix{ 'k', false, rgy_pow_int<10,int64_t>(2), rgy_pow_int< 3,int64_t>(10) },
+    RGYSIPrefix{ 'K', false, rgy_pow_int<10,int64_t>(2), rgy_pow_int< 3,int64_t>(10) },
+    RGYSIPrefix{ 'M', false, rgy_pow_int<20,int64_t>(2), rgy_pow_int< 6,int64_t>(10) },
+    RGYSIPrefix{ 'g', false, rgy_pow_int<30,int64_t>(2), rgy_pow_int< 9,int64_t>(10) },
+    RGYSIPrefix{ 'G', false, rgy_pow_int<30,int64_t>(2), rgy_pow_int< 9,int64_t>(10) },
+    RGYSIPrefix{ 't', false, rgy_pow_int<40,int64_t>(2), rgy_pow_int<12,int64_t>(10) },
+    RGYSIPrefix{ 'T', false, rgy_pow_int<40,int64_t>(2), rgy_pow_int<12,int64_t>(10) },
+    RGYSIPrefix{ 'P', false, rgy_pow_int<50,int64_t>(2), rgy_pow_int<15,int64_t>(10) },
+    RGYSIPrefix{ 'E', false, rgy_pow_int<60,int64_t>(2), rgy_pow_int<18,int64_t>(10) }
+    );
+
+template<typename T>
+static void rgy_apply_si_prefix(T& val, const TCHAR *endptr) {
+    const auto prefix = tchar_to_string(endptr, CODE_PAGE_UTF8);
+    if (prefix[0] != '\0') {
+        auto siprefix = std::find_if(RGY_SI_PREFIX_LIST.begin(), RGY_SI_PREFIX_LIST.end(), [p = prefix[0]](const RGYSIPrefix& si) { return si.prefix == p; });
+        if (siprefix != RGY_SI_PREFIX_LIST.end()) {
+            const bool usepow2 = prefix[1] != 'i';
+            if (siprefix->inverse) {
+                val /= (usepow2) ? siprefix->pow2 : siprefix->pow10;
+            } else {
+                val *= (usepow2) ? siprefix->pow2 : siprefix->pow10;
+            }
+        }
+    }
+}
+
+int rgy_parse_num(int& val, const tstring& str) {
+    val = 0;
+    try {
+        size_t idx = 0;
+        int64_t val64 = std::stoll(str, &idx, 0);
+        auto endptr = str.c_str() + idx;
+        rgy_apply_si_prefix(val64, endptr);
+        if (val64 < std::numeric_limits<int>::min() || std::numeric_limits<int>::max() < val64) {
+            val = 0;
+            return 1;
+        }
+        val = (int)val64;
+    } catch (...) {
+        return 1;
+    }
+    return 0;
+}
+
+int rgy_parse_num(int64_t& val, const tstring& str) {
+    val = 0;
+    try {
+        size_t idx = 0;
+        val = std::stoll(str, &idx, 0);
+        auto endptr = str.c_str() + idx;
+        const auto prefix = tchar_to_string(endptr, CODE_PAGE_UTF8);
+        rgy_apply_si_prefix(val, endptr);
+    } catch (...) {
+        return 1;
+    }
+    return 0;
+}
+
+int rgy_parse_num(float& val, const tstring& str) {
+    val = 0;
+    try {
+        size_t idx = 0;
+        double vald = std::stod(str, &idx);
+        rgy_apply_si_prefix(vald, str.c_str() + idx);
+        val = (float)vald;
+    } catch (...) {
+        return 1;
+    }
+    return 0;
+}
+
+int rgy_parse_num(double& val, const tstring& str) {
+    val = 0;
+    try {
+        size_t idx = 0;
+        val = std::stod(str, &idx);
+        rgy_apply_si_prefix(val, str.c_str() + idx);
+    } catch (...) {
+        return 1;
+    }
+    return 0;
+}
+
+tstring rgy_print_num_with_siprefix(const int64_t value) {
+    const RGYSIPrefix *usePrefix = nullptr;
+    for (const auto& prefix : RGY_SI_PREFIX_LIST) {
+        if (!prefix.inverse && value > prefix.pow10) {
+            usePrefix = &prefix;
+        }
+    }
+    if (usePrefix) {
+        return strsprintf(_T("%.3f%c"), value / (double)usePrefix->pow10, usePrefix->prefix);
+    } else {
+        return strsprintf(_T("%lld"), value);
+    }
+}
+
 bool check_ext(const tstring& filename, const std::vector<const char*>& ext_list) {
     return check_ext(filename.c_str(), ext_list);
 }
 
+BOOL _tcheck_ext(const TCHAR *filename, const TCHAR *ext) {
+    return tolowercase(std::filesystem::path(filename).extension().string()) == tolowercase(tchar_to_string(ext));
+}
+
+bool rgy_file_exists(const std::string& filepath) {
+    return std::filesystem::exists(filepath) && std::filesystem::is_regular_file(filepath);
+}
+
+bool rgy_file_exists(const std::wstring& filepath) {
+    return std::filesystem::exists(filepath) && std::filesystem::is_regular_file(filepath);
+}
+
 bool rgy_get_filesize(const char *filepath, uint64_t *filesize) {
 #if defined(_WIN32) || defined(_WIN64)
-    WIN32_FILE_ATTRIBUTE_DATA fd = { 0 };
-    bool ret = (GetFileAttributesExA(filepath, GetFileExInfoStandard, &fd)) ? true : false;
-    *filesize = (ret) ? (((UINT64)fd.nFileSizeHigh) << 32) + (UINT64)fd.nFileSizeLow : NULL;
-    return ret;
+    const auto filepathw = char_to_wstring(filepath);
+    return rgy_get_filesize(filepathw.c_str(), filesize);
 #else //#if defined(_WIN32) || defined(_WIN64)
     struct stat stat;
     FILE *fp = fopen(filepath, "rb");
@@ -637,7 +698,7 @@ bool rgy_get_filesize(const char *filepath, uint64_t *filesize) {
 #if defined(_WIN32) || defined(_WIN64)
 bool rgy_get_filesize(const WCHAR *filepath, uint64_t *filesize) {
     WIN32_FILE_ATTRIBUTE_DATA fd = { 0 };
-    bool ret = (GetFileAttributesExW(filepath, GetFileExInfoStandard, &fd)) ? true : false;
+    bool ret = (GetFileAttributesExW(filepath, GetFileExInfoStandard, &fd)) ? true : false; // No MAX_PATH Limitation
     *filesize = (ret) ? (((UINT64)fd.nFileSizeHigh) << 32) + (UINT64)fd.nFileSizeLow : NULL;
     return ret;
 }
@@ -645,11 +706,10 @@ bool rgy_get_filesize(const WCHAR *filepath, uint64_t *filesize) {
 std::vector<tstring> get_file_list(const tstring& pattern, const tstring& dir) {
     std::vector<tstring> list;
 
-    TCHAR buf[1024];
-    PathCombine(buf, GetFullPath(dir.c_str()).c_str(), pattern.c_str());
+    auto buf = wstring_to_tstring(std::filesystem::path(GetFullPath(dir.c_str())).append(pattern).wstring());
 
     WIN32_FIND_DATA win32fd;
-    HANDLE hFind = FindFirstFile(buf, &win32fd);
+    HANDLE hFind = FindFirstFile(buf.c_str(), &win32fd); // FindFirstFileW No MAX_PATH Limitation
 
     if (hFind == INVALID_HANDLE_VALUE) {
         return list;
@@ -659,11 +719,10 @@ std::vector<tstring> get_file_list(const tstring& pattern, const tstring& dir) {
         if ((win32fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             && _tcscmp(win32fd.cFileName, _T("..")) !=0
             && _tcscmp(win32fd.cFileName, _T(".")) != 0) {
-            TCHAR buf2[1024];
-            PathCombine(buf2, dir.c_str(), win32fd.cFileName);
+            const auto buf2 = wstring_to_tstring(std::filesystem::path(GetFullPath(dir.c_str())).append(win32fd.cFileName).wstring());
             vector_cat(list, get_file_list(pattern, buf2));
         } else {
-            PathCombine(buf, GetFullPath(dir.c_str()).c_str(), win32fd.cFileName);
+            buf = wstring_to_tstring(std::filesystem::path(GetFullPath(dir.c_str())).append(win32fd.cFileName).wstring());
             list.push_back(buf);
         }
     } while (FindNextFile(hFind, &win32fd));
@@ -671,23 +730,38 @@ std::vector<tstring> get_file_list(const tstring& pattern, const tstring& dir) {
     return list;
 }
 
-tstring getExeDir() {
+bool PathFileExistsA(const char *filename) {
+    auto path = std::filesystem::path(filename);
+    return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
+}
+
+bool PathFileExistsW(const WCHAR *filename) {
+    auto path = std::filesystem::path(filename);
+    return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
+}
+
+
+tstring getExePath() {
     TCHAR exePath[1024];
     memset(exePath, 0, sizeof(exePath));
     GetModuleFileName(NULL, exePath, _countof(exePath));
-    return PathRemoveFileSpecFixed(tstring(exePath)).second;
+    return exePath;
 }
+
 #else
-tstring getExeDir() {
+tstring getExePath() {
     char prg_path[4096];
     auto ret = readlink("/proc/self/exe", prg_path, sizeof(prg_path));
     if (ret <= 0) {
         prg_path[0] = '\0';
     }
-    return char_to_tstring(PathRemoveFileSpecFixed(prg_path).second);
+    return prg_path;
 }
 
 #endif //#if defined(_WIN32) || defined(_WIN64)
+tstring getExeDir() {
+    return PathRemoveFileSpecFixed(getExePath()).second;
+}
 
 tstring print_time(double time) {
     int sec = (int)time;
@@ -700,234 +774,70 @@ tstring print_time(double time) {
     return strsprintf(_T("%d:%02d:%02d%s"), hour, miniute, sec, frac.substr(frac.find_first_of(_T("."))).c_str());
 }
 
-#if defined(_WIN32) || defined(_WIN64)
-
-#include "rgy_osdep.h"
-#include <process.h>
-#include <VersionHelpers.h>
-
-typedef void (WINAPI *RtlGetVersion_FUNC)(OSVERSIONINFOEXW*);
-
-static int getRealWindowsVersion(DWORD *major, DWORD *minor, DWORD *build) {
-    *major = 0;
-    *minor = 0;
-    OSVERSIONINFOEXW osver;
-    HMODULE hModule = NULL;
-    RtlGetVersion_FUNC func = NULL;
-    int ret = 1;
-    if (   NULL != (hModule = LoadLibrary(_T("ntdll.dll")))
-        && NULL != (func = (RtlGetVersion_FUNC)GetProcAddress(hModule, "RtlGetVersion"))) {
-        func(&osver);
-        *major = osver.dwMajorVersion;
-        *minor = osver.dwMinorVersion;
-        *build = osver.dwBuildNumber;
-        ret = 0;
-    }
-    if (hModule) {
-        FreeLibrary(hModule);
-    }
-    return ret;
-}
-#endif //#if defined(_WIN32) || defined(_WIN64)
-
-BOOL check_OS_Win8orLater() {
-#if defined(_WIN32) || defined(_WIN64)
-#if (_MSC_VER >= 1800)
-    return IsWindows8OrGreater();
-#else
-    OSVERSIONINFO osvi = { 0 };
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    GetVersionEx(&osvi);
-    return ((osvi.dwPlatformId == VER_PLATFORM_WIN32_NT) && ((osvi.dwMajorVersion == 6 && osvi.dwMinorVersion >= 2) || osvi.dwMajorVersion > 6));
-#endif //(_MSC_VER >= 1800)
-#else //#if defined(_WIN32) || defined(_WIN64)
-    return FALSE;
-#endif //#if defined(_WIN32) || defined(_WIN64)
-}
-
-#if defined(_WIN32) || defined(_WIN64)
-#pragma warning(push)
-#pragma warning(disable:4996) // warning C4996: 'GetVersionExW': が古い形式として宣言されました。
-tstring getOSVersion(OSVERSIONINFOEXW *osinfo) {
-    const TCHAR *ptr = _T("Unknown");
-    OSVERSIONINFOW info = { 0 };
-    OSVERSIONINFOEXW infoex = { 0 };
-    info.dwOSVersionInfoSize = sizeof(info);
-    infoex.dwOSVersionInfoSize = sizeof(infoex);
-    GetVersionExW(&info);
-    switch (info.dwPlatformId) {
-    case VER_PLATFORM_WIN32_WINDOWS:
-        if (4 <= info.dwMajorVersion) {
-            switch (info.dwMinorVersion) {
-            case 0:  ptr = _T("Windows 95"); break;
-            case 10: ptr = _T("Windows 98"); break;
-            case 90: ptr = _T("Windows Me"); break;
-            default: break;
-            }
+size_t malloc_degeneracy(void **ptr, size_t nSize, size_t nMinSize) {
+    *ptr = nullptr;
+    nMinSize = (std::max<size_t>)(nMinSize, 1);
+    nSize = (std::max<size_t>)(nSize, nMinSize);
+    //確保できなかったら、サイズを小さくして再度確保を試みる (最終的に1MBも確保できなかったら諦める)
+    while (nSize >= nMinSize) {
+        void *qtr = malloc(nSize);
+        if (qtr != nullptr) {
+            *ptr = qtr;
+            return nSize;
         }
-        break;
-    case VER_PLATFORM_WIN32_NT:
-        if (info.dwMajorVersion >= 6 || (info.dwMajorVersion == 5 && info.dwMinorVersion >= 2)) {
-            GetVersionExW((OSVERSIONINFOW *)&infoex);
+        size_t nNextSize = 0;
+        for (size_t i = nMinSize; i < nSize; i<<=1) {
+            nNextSize = i;
+        }
+        nSize = nNextSize;
+    }
+    return 0;
+}
+
+// convert float to half precision floating point
+unsigned short float2half(float value) {
+    // 1 : 8 : 23
+    union {
+        unsigned int u;
+        float f;
+    } tmp;
+
+    tmp.f = value;
+
+    // 1 : 8 : 23
+    unsigned short sign = (tmp.u & 0x80000000) >> 31;
+    unsigned short exponent = (tmp.u & 0x7F800000) >> 23;
+    unsigned int significand = tmp.u & 0x7FFFFF;
+
+    //     fprintf(stderr, "%d %d %d\n", sign, exponent, significand);
+
+        // 1 : 5 : 10
+    unsigned short fp16;
+    if (exponent == 0) {
+        // zero or denormal, always underflow
+        fp16 = (sign << 15) | (0x00 << 10) | 0x00;
+    } else if (exponent == 0xFF) {
+        // infinity or NaN
+        fp16 = (sign << 15) | (0x1F << 10) | (significand ? 0x200 : 0x00);
+    } else {
+        // normalized
+        short newexp = exponent + (-127 + 15);
+        if (newexp >= 31) {
+            // overflow, return infinity
+            fp16 = (sign << 15) | (0x1F << 10) | 0x00;
+        } else if (newexp <= 0) {
+            // underflow
+            if (newexp >= -10) {
+                // denormal half-precision
+                unsigned short sig = (unsigned short)((significand | 0x800000) >> (14 - newexp));
+                fp16 = (sign << 15) | (0x00 << 10) | sig;
+            } else {
+                // underflow
+                fp16 = (sign << 15) | (0x00 << 10) | 0x00;
+            }
         } else {
-            memcpy(&infoex, &info, sizeof(info));
-        }
-        if (info.dwMajorVersion == 6) {
-            getRealWindowsVersion(&infoex.dwMajorVersion, &infoex.dwMinorVersion, &infoex.dwBuildNumber);
-        }
-        if (osinfo) {
-            memcpy(osinfo, &infoex, sizeof(infoex));
-        }
-        switch (infoex.dwMajorVersion) {
-        case 3:
-            switch (infoex.dwMinorVersion) {
-            case 0:  ptr = _T("Windows NT 3"); break;
-            case 1:  ptr = _T("Windows NT 3.1"); break;
-            case 5:  ptr = _T("Windows NT 3.5"); break;
-            case 51: ptr = _T("Windows NT 3.51"); break;
-            default: break;
-            }
-            break;
-        case 4:
-            if (0 == infoex.dwMinorVersion)
-                ptr = _T("Windows NT 4.0");
-            break;
-        case 5:
-            switch (infoex.dwMinorVersion) {
-            case 0:  ptr = _T("Windows 2000"); break;
-            case 1:  ptr = _T("Windows XP"); break;
-            case 2:  ptr = _T("Windows Server 2003"); break;
-            default: break;
-            }
-            break;
-        case 6:
-            switch (infoex.dwMinorVersion) {
-            case 0:  ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows Vista") : _T("Windows Server 2008");    break;
-            case 1:  ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows 7")     : _T("Windows Server 2008 R2"); break;
-            case 2:  ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows 8")     : _T("Windows Server 2012");    break;
-            case 3:  ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows 8.1")   : _T("Windows Server 2012 R2"); break;
-            case 4:  ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows 10")    : _T("Windows Server 2016");    break;
-            default:
-                if (5 <= infoex.dwMinorVersion) {
-                    ptr = _T("Later than Windows 10");
-                }
-                break;
-            }
-            break;
-        case 10:
-            ptr = (infoex.wProductType == VER_NT_WORKSTATION) ? _T("Windows 10") : _T("Windows Server 2016"); break;
-        default:
-            if (10 <= infoex.dwMajorVersion) {
-                ptr = _T("Later than Windows 10");
-            }
-            break;
-        }
-        break;
-    default:
-        break;
-    }
-    return tstring(ptr);
-}
-#pragma warning(pop)
-
-tstring getOSVersion() {
-    OSVERSIONINFOEXW osversioninfo = { 0 };
-    tstring osversionstr = getOSVersion(&osversioninfo);
-    osversionstr += strsprintf(_T(" %s (%d)"), rgy_is_64bit_os() ? _T("x64") : _T("x86"), osversioninfo.dwBuildNumber);
-    return osversionstr;
-}
-#else //#if defined(_WIN32) || defined(_WIN64)
-tstring getOSVersion() {
-    std::string str = "";
-    FILE *fp = popen("/usr/bin/lsb_release -a", "r");
-    if (fp != NULL) {
-        char buffer[2048];
-        while (NULL != fgets(buffer, _countof(buffer), fp)) {
-            str += buffer;
-        }
-        pclose(fp);
-        if (str.length() > 0) {
-            auto sep = split(str, "\n");
-            for (auto line : sep) {
-                if (line.find("Description") != std::string::npos) {
-                    std::string::size_type pos = line.find(":");
-                    if (pos == std::string::npos) {
-                        pos = std::string("Description").length();
-                    }
-                    pos++;
-                    str = line.substr(pos);
-                    break;
-                }
-            }
+            fp16 = (unsigned short)((sign << 15) | (newexp << 10) | (significand >> 13));
         }
     }
-    if (str.length() == 0) {
-        struct utsname buf;
-        uname(&buf);
-        str += buf.sysname;
-        str += " ";
-        str += buf.release;
-    }
-    return char_to_tstring(trim(str));
-}
-#endif //#if defined(_WIN32) || defined(_WIN64)
-
-BOOL rgy_is_64bit_os() {
-#if defined(_WIN32) || defined(_WIN64)
-    SYSTEM_INFO sinfo = { 0 };
-    GetNativeSystemInfo(&sinfo);
-    return sinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64;
-#else //#if defined(_WIN32) || defined(_WIN64)
-    struct utsname buf;
-    uname(&buf);
-    return NULL != strstr(buf.machine, "x64")
-        || NULL != strstr(buf.machine, "x86_64")
-        || NULL != strstr(buf.machine, "amd64");
-#endif //#if defined(_WIN32) || defined(_WIN64)
-}
-
-uint64_t getPhysicalRamSize(uint64_t *ramUsed) {
-#if defined(_WIN32) || defined(_WIN64)
-    MEMORYSTATUSEX msex ={ 0 };
-    msex.dwLength = sizeof(msex);
-    GlobalMemoryStatusEx(&msex);
-    if (NULL != ramUsed) {
-        *ramUsed = msex.ullTotalPhys - msex.ullAvailPhys;
-    }
-    return msex.ullTotalPhys;
-#else //#if defined(_WIN32) || defined(_WIN64)
-    struct sysinfo info;
-    sysinfo(&info);
-    if (NULL != ramUsed) {
-        *ramUsed = info.totalram - info.freeram;
-    }
-    return info.totalram;
-#endif //#if defined(_WIN32) || defined(_WIN64)
-}
-
-tstring getEnviromentInfo() {
-    tstring buf;
-
-    TCHAR cpu_info[1024] = { 0 };
-    getCPUInfo(cpu_info, _countof(cpu_info));
-    uint64_t UsedRamSize = 0;
-    uint64_t totalRamsize = getPhysicalRamSize(&UsedRamSize);
-
-    buf += _T("Environment Info\n");
-#if defined(_WIN32) || defined(_WIN64)
-    OSVERSIONINFOEXW osversioninfo = { 0 };
-    tstring osversionstr = getOSVersion(&osversioninfo);
-    buf += strsprintf(_T("OS : %s %s (%d)\n"), osversionstr.c_str(), rgy_is_64bit_os() ? _T("x64") : _T("x86"), osversioninfo.dwBuildNumber);
-#else
-    buf += strsprintf(_T("OS : %s %s\n"), getOSVersion().c_str(), rgy_is_64bit_os() ? _T("x64") : _T("x86"));
-#endif
-    buf += strsprintf(_T("CPU: %s\n"), cpu_info);
-    buf += strsprintf(_T("RAM: Used %d MB, Total %d MB\n"), (uint32_t)(UsedRamSize >> 20), (uint32_t)(totalRamsize >> 20));
-
-#if ENCODER_QSV
-    TCHAR gpu_info[1024] = { 0 };
-    getGPUInfo(GPU_VENDOR, gpu_info, _countof(gpu_info));
-    buf += strsprintf(_T("GPU: %s\n"), gpu_info);
-#endif //#if ENCODER_QSV
-    return buf;
+    return fp16;
 }

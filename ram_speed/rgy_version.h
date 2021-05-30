@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2019 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,26 +23,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-// -------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 
 #pragma once
-#ifndef __RGY_CODEPAGE_H__
-#define __RGY_CODEPAGE_H__
+#ifndef __RGY_CONFIG_H__
+#define __RGY_CONFIG_H__
 
-//日本語環境の一般的なコードページ一覧
-enum : uint32_t {
-    CODE_PAGE_SJIS        = 932, //Shift-JIS
-    CODE_PAGE_JIS         = 50220,
-    CODE_PAGE_EUC_JP      = 51932,
-    CODE_PAGE_UTF8        = 65001,
-    CODE_PAGE_UTF16_LE    = 1200, //WindowsのUnicode WCHAR のコードページ
-    CODE_PAGE_UTF16_BE    = 1201,
-    CODE_PAGE_US_ASCII    = 20127,
-    CODE_PAGE_WEST_EUROPE = 1252,  //厄介な西ヨーロッパ言語
-    CODE_PAGE_UNSET       = 0xffffffff,
-};
+#ifdef _M_IX86
+#define BUILD_ARCH_STR _T("x86")
+#else
+#define BUILD_ARCH_STR _T("x64")
+#endif
 
-uint32_t get_code_page(const void *str, uint32_t size_in_byte);
-const char *codepage_str(uint32_t codepage);
-
-#endif //__RGY_CODEPAGE_H__
+#endif //__RGY_CONFIG_H__

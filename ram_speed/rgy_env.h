@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// QSVEnc/NVEnc/VCEEnc by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2011-2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,58 +25,22 @@
 //
 // --------------------------------------------------------------------------------------------
 
-#ifndef _CPU_INFO_H_
-#define _CPU_INFO_H_
+#pragma once
+#ifndef __RGY_ENV_H__
+#define __RGY_ENV_H__
 
-#include <stdint.h>
-#include "rgy_tchar.h"
-#include "rgy_osdep.h"
-#include "rgy_version.h"
+#include "rgy_util.h"
 
-typedef struct cache_info_t {
-    uint32_t count;
-    uint32_t level;
-    uint32_t associativity;
-    uint32_t linesize;
-    uint32_t type;
-    uint32_t size;
-} cache_info_t;
-
-typedef struct {
-    uint32_t nodes;
-    uint32_t physical_cores;
-    uint32_t logical_cores;
-    uint32_t max_cache_level;
-    cache_info_t caches[4];
-} cpu_info_t;
-
-
-int getCPUName(char *buffer, size_t nSize);
-bool get_cpu_info(cpu_info_t *cpu_info);
-cpu_info_t get_cpu_info();
-
-#if ENCODER_QSV
-#include "mfxvideo++.h"
-int getCPUInfo(TCHAR *buffer, size_t nSize, MFXVideoSession *pSession = nullptr);
+#if defined(_WIN32) || defined(_WIN64)
+tstring getOSVersion(OSVERSIONINFOEXW *osinfo);
+tstring getOSVersion();
 #else
-int getCPUInfo(TCHAR *buffer, size_t nSize);
+tstring getOSVersion();
 #endif
+BOOL rgy_is_64bit_os();
+uint64_t getPhysicalRamSize(uint64_t *ramUsed);
+tstring getEnviromentInfo(int device_id = 0);
 
-template <size_t size>
-int inline getCPUInfo(TCHAR(&buffer)[size]) {
-    return getCPUInfo(buffer, size);
-}
+BOOL check_OS_Win8orLater();
 
-double getCPUDefaultClock();
-double getCPUMaxTurboClock();
-
-typedef struct PROCESS_TIME {
-    uint64_t creation, exit, kernel, user;
-} PROCESS_TIME;
-
-BOOL GetProcessTime(PROCESS_TIME *time);
-BOOL GetProcessTime(HANDLE hProcess, PROCESS_TIME *time);
-double GetProcessAvgCPUUsage(HANDLE hProcess, PROCESS_TIME *start = nullptr);
-double GetProcessAvgCPUUsage(PROCESS_TIME *start = nullptr);
-
-#endif //_CPU_INFO_H_
+#endif //__RGY_ENV_H__

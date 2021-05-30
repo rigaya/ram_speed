@@ -257,7 +257,7 @@ fi
 
 
 SRC_RAMSPEED_CPP=" \
-ram_speed.cpp cpu_info.cpp rgy_simd.cpp ram_speed_util.cpp rgy_codepage.cpp \
+ram_speed.cpp cpu_info.cpp rgy_simd.cpp rgy_env.cpp rgy_util.cpp rgy_codepage.cpp \
 "
 
 SRC_RAMSPEED_ASM=" \

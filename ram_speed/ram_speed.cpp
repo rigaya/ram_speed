@@ -40,8 +40,9 @@
 
 #include "cpu_info.h"
 #include "rgy_simd.h"
+#include "rgy_util.h"
+#include "rgy_env.h"
 #include "ram_speed.h"
-#include "ram_speed_util.h"
 
 static inline size_t align_size(size_t i) {
     return (i + 511) & ~511;

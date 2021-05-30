@@ -96,6 +96,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;ENABLE_ASM=1;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -110,6 +112,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;ENABLE_ASM=1;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,6 +140,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -166,6 +172,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -180,18 +188,20 @@
   <ItemGroup>
     <ClCompile Include="cpu_info.cpp" />
     <ClCompile Include="ram_speed.cpp" />
-    <ClCompile Include="ram_speed_util.cpp" />
     <ClCompile Include="rgy_codepage.cpp" />
+    <ClCompile Include="rgy_env.cpp" />
     <ClCompile Include="rgy_simd.cpp" />
+    <ClCompile Include="rgy_util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_info.h" />
     <ClInclude Include="ram_speed.h" />
     <ClInclude Include="rgy_codepage.h" />
+    <ClInclude Include="rgy_env.h" />
     <ClInclude Include="rgy_osdep.h" />
     <ClInclude Include="rgy_simd.h" />
     <ClInclude Include="rgy_tchar.h" />
-    <ClInclude Include="ram_speed_util.h" />
+    <ClInclude Include="rgy_util.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ram_speed_x64.asm">

@@ -1,9 +1,9 @@
 ﻿// -----------------------------------------------------------------------------------------
-// ram_speed by rigaya
+// QSVEnc/NVEnc by rigaya
 // -----------------------------------------------------------------------------------------
 // The MIT License
 //
-// Copyright (c) 2020 rigaya
+// Copyright (c) 2011-2016 rigaya
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,6 @@
 #define __RGY_UTIL_H__
 
 #include "rgy_tchar.h"
-#if defined(_WIN32) || defined(_WIN64)
-#include <shlwapi.h>
-#pragma comment(lib, "shlwapi.lib")
-#endif
 #include <vector>
 #include <array>
 #include <string>
@@ -51,31 +47,29 @@
 #include <type_traits>
 #include "rgy_osdep.h"
 
-typedef std::basic_string<TCHAR> tstring;
-
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(x)
 #endif
 
 #if defined(_MSC_VER)
-#define DO_PRAGMA(x)
+#define RGY_DO_PRAGMA(x)
 #define RGY_DISABLE_WARNING_PUSH
 #define RGY_DISABLE_WARNING_STR(str)
 #define RGY_DISABLE_WARNING_POP
 #elif defined(__clang__)
-#define DO_PRAGMA_(x) _Pragma (#x)
-#define DO_PRAGMA(x)  DO_PRAGMA_(x)
-#define RGY_DISABLE_WARNING_PUSH     DO_PRAGMA(clang diagnostic push)
+#define RGY_DO_PRAGMA_(x) _Pragma (#x)
+#define RGY_DO_PRAGMA(x)  RGY_DO_PRAGMA_(x)
+#define RGY_DISABLE_WARNING_PUSH     RGY_DO_PRAGMA(clang diagnostic push)
 #define RGY_DISABLE_WARNING_NUM(num)
-#define RGY_DISABLE_WARNING_STR(str) DO_PRAGMA(clang diagnostic ignored str)
-#define RGY_DISABLE_WARNING_POP      DO_PRAGMA(clang diagnostic pop)
+#define RGY_DISABLE_WARNING_STR(str) RGY_DO_PRAGMA(clang diagnostic ignored str)
+#define RGY_DISABLE_WARNING_POP      RGY_DO_PRAGMA(clang diagnostic pop)
 #elif defined(__GNUC__)
-#define DO_PRAGMA_(x) _Pragma (#x)
-#define DO_PRAGMA(x)  DO_PRAGMA_(x)
-#define RGY_DISABLE_WARNING_PUSH     DO_PRAGMA(GCC diagnostic push)
+#define RGY_DO_PRAGMA_(x) _Pragma (#x)
+#define RGY_DO_PRAGMA(x)  RGY_DO_PRAGMA_(x)
+#define RGY_DISABLE_WARNING_PUSH     RGY_DO_PRAGMA(GCC diagnostic push)
 #define RGY_DISABLE_WARNING_NUM(num)
-#define RGY_DISABLE_WARNING_STR(str) DO_PRAGMA(GCC diagnostic ignored str)
-#define RGY_DISABLE_WARNING_POP      DO_PRAGMA(GCC diagnostic pop)
+#define RGY_DISABLE_WARNING_STR(str) RGY_DO_PRAGMA(GCC diagnostic ignored str)
+#define RGY_DISABLE_WARNING_POP      RGY_DO_PRAGMA(GCC diagnostic pop)
 #endif
 
 using std::vector;
@@ -179,6 +173,49 @@ static void rgy_free(T& ptr) {
     }
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4127)
+template <class T, int N>
+struct RGYPowerBase {
+    static T run(T x) {
+        if (N < 0) {
+            return RGYPowerBase<T, -N>::run(1 / x);
+        } else if (N % 2 != 0) {
+            return x * RGYPowerBase<T, ((N>0)?N-1:0)>::run(x);
+        } else if (N == 0) {
+            return 1;
+        } else {
+            return RGYPowerBase<T, N / 2>::run(x * x);
+        }
+    }
+};
+
+
+template <int N, class T>
+T rgy_pow_int(T x) {
+    return RGYPowerBase<T, N>::run(x);
+}
+
+template <class T>
+T rgy_pow_int(T x, int n) {
+    if (n < 0) {
+        x = T(1) / x;
+        n = -n;
+    }
+    T v = T(1);
+    for (int i = 0; i < n; i++) {
+        v *= x;
+    }
+    return v;
+}
+#pragma warning(pop)
+
+int rgy_parse_num(int& val, const tstring& str);
+int rgy_parse_num(int64_t& val, const tstring& str);
+int rgy_parse_num(float& val, const tstring& str);
+int rgy_parse_num(double& val, const tstring& str);
+tstring rgy_print_num_with_siprefix(const int64_t value);
+
 template<typename T>
 using unique_ptr_custom = std::unique_ptr<T, std::function<void(T*)>>;
 
@@ -276,6 +313,7 @@ private:
     T num, den;
 public:
     rgy_rational() : num(0), den(1) {}
+    rgy_rational(T _num) : num(_num), den(1) { }
     rgy_rational(T _num, T _den) : num(_num), den(_den) { reduce(); }
     rgy_rational(const rgy_rational<T>& r) : num(r.num), den(r.den) { reduce(); }
     rgy_rational<T>& operator=(const rgy_rational<T> &r) { num = r.num; den = r.den; reduce(); return *this; }
@@ -529,7 +567,9 @@ std::wstring PathCombineS(const std::wstring& dir, const std::wstring& filename)
 std::string PathCombineS(const std::string& dir, const std::string& filename);
 bool CreateDirectoryRecursive(const WCHAR *dir);
 std::vector<tstring> get_file_list(const tstring& pattern, const tstring& dir);
+tstring getACPCodepageStr();
 #endif //#if defined(_WIN32) || defined(_WIN64)
+tstring getExePath();
 tstring getExeDir();
 
 std::wstring tchar_to_wstring(const tstring& tstr, uint32_t codepage = CP_THREAD_ACP);
@@ -563,6 +603,8 @@ std::vector<std::string> sep_cmd(const std::string &cmd);
 
 std::string str_replace(std::string str, const std::string& from, const std::string& to);
 std::string GetFullPath(const char *path);
+bool rgy_file_exists(const std::string& filepath);
+bool rgy_file_exists(const std::wstring& filepath);
 bool rgy_get_filesize(const char *filepath, uint64_t *filesize);
 std::pair<int, std::string> PathRemoveFileSpecFixed(const std::string& path);
 std::string PathRemoveExtensionS(const std::string& path);
@@ -623,22 +665,241 @@ bool check_ext(const TCHAR *filename, const std::vector<const char*>& ext_list);
 bool check_ext(const tstring& filename, const std::vector<const char*>& ext_list);
 
 //拡張子が一致するか確認する
-static BOOL _tcheck_ext(const TCHAR *filename, const TCHAR *ext) {
-    return (_tcsicmp(PathFindExtension(filename), ext) == 0) ? TRUE : FALSE;
-}
+BOOL _tcheck_ext(const TCHAR *filename, const TCHAR *ext);
 
-int rgy_print_stderr(int log_level, const TCHAR *mes, HANDLE handle = NULL);
+//確保できなかったら、サイズを小さくして再度確保を試みる (最終的にnMinSizeも確保できなかったら諦める)
+size_t malloc_degeneracy(void **ptr, size_t nSize, size_t nMinSize);
 
-#if defined(_WIN32) || defined(_WIN64)
-tstring getOSVersion(OSVERSIONINFOEXW *osinfo);
-tstring getOSVersion();
-#else
-tstring getOSVersion();
-#endif
-BOOL rgy_is_64bit_os();
-uint64_t getPhysicalRamSize(uint64_t *ramUsed);
+class vec3 {
+public:
+    vec3() : v() {
+        for (int i = 0; i < 3; i++)
+            v[i] = 0.0;
+    }
+    vec3(const vec3 &m) { memcpy(&v[0], &m.v[0], sizeof(v)); }
+    vec3(double a0, double a1, double a2) {
+        v[0] = a0;
+        v[1] = a1;
+        v[2] = a2;
+    }
+    vec3 &operator=(const vec3 &m) { memcpy(&v[0], &m.v[0], sizeof(v)); return *this; }
+    const vec3 &m() const {
+        return *this;
+    }
+    double &operator()(int i) {
+        return v[i];
+    }
+    const double &operator()(int i) const {
+        return v[i];
+    }
+    vec3 &operator+= (const vec3 &a) {
+        for (int i = 0; i < 3; i++)
+            v[i] += a.v[i];
+        return *this;
+    }
+    vec3 &operator-= (const vec3 &a) {
+        for (int i = 0; i < 3; i++)
+            v[i] -= a.v[i];
+        return *this;
+    }
+    vec3 amdal(const vec3 &a) const {
+        return vec3(
+            v[0] * a.v[0],
+            v[1] * a.v[1],
+            v[2] * a.v[2]
+        );
+    }
+    double dot(const vec3 &a) const {
+        return a.v[0] * v[0] + a.v[1] * v[1] + a.v[2] * v[2];
+    }
+    vec3 cross(const vec3 &a) const {
+        return vec3(
+            v[1] * a.v[2] - v[2] * a.v[1],
+            v[2] * a.v[0] - v[0] * a.v[2],
+            v[0] * a.v[1] - v[1] * a.v[0]
+        );
+    }
+    bool operator== (const vec3 &r) const {
+        return memcmp(&v[0], &r.v[0], sizeof(v)) == 0;
+    }
+    bool operator!= (const vec3 &r) const {
+        return memcmp(&v[0], &r.v[0], sizeof(v)) != 0;
+    }
+private:
+    double v[3];
+};
 
-tstring getEnviromentInfo();
+class mat3x3 {
+public:
+    mat3x3() : mat() {
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                mat[j][i] = 0.0;
+    }
+    mat3x3(const vec3 &col0, const vec3 &col1, const vec3 &col2) : mat() {
+        for (int i = 0; i < 3; i++) {
+            mat[0][i] = col0(i);
+            mat[1][i] = col1(i);
+            mat[2][i] = col2(i);
+        }
+    }
+    mat3x3(const mat3x3 &m) { memcpy(&this->mat[0][0], &m.mat[0][0], sizeof(mat)); }
+    mat3x3(double a00, double a01, double a02, double a10, double a11, double a12, double a20, double a21, double a22) {
+        mat[0][0] = a00;
+        mat[0][1] = a01;
+        mat[0][2] = a02;
+        mat[1][0] = a10;
+        mat[1][1] = a11;
+        mat[1][2] = a12;
+        mat[2][0] = a20;
+        mat[2][1] = a21;
+        mat[2][2] = a22;
+    }
+    mat3x3 &operator=(const mat3x3 &m) { memcpy(&this->mat[0][0], &m.mat[0][0], sizeof(mat)); return *this; }
+
+    const mat3x3 &m() const {
+        return *this;
+    }
+    //(行,列)
+    double &operator()(int i, int j) {
+        return mat[i][j];
+    }
+    //(行,列)
+    const double &operator()(int i, int j) const {
+        return mat[i][j];
+    }
+
+    mat3x3 &operator+= (const mat3x3& a) {
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                mat[j][i] += a.mat[j][i];
+        return *this;
+    }
+    mat3x3 &operator-= (const mat3x3 &a) {
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                mat[j][i] -= a.mat[j][i];
+        return *this;
+    }
+    mat3x3 &operator*= (const double a) {
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                mat[j][i] *= a;
+        return *this;
+    }
+    mat3x3 &operator*= (const mat3x3 &r) {
+        *this = mul(*this, r);
+        return *this;
+    }
+    mat3x3 &operator/= (const double a) {
+        *this *= (1.0 / a);
+        return *this;
+    }
+    mat3x3 &operator/= (const mat3x3 &r) {
+        *this = mul(*this, r.inv());
+        return *this;
+    }
+
+    template<typename Arg>
+    mat3x3 operator + (const Arg &a) const {
+        mat3x3 t(*this);
+        t += a;
+        return t;
+    }
+    template<typename Arg>
+    mat3x3 operator - (const Arg &a) const {
+        mat3x3 t(*this);
+        t -= a;
+        return t;
+    }
+    mat3x3 operator * (const mat3x3 &a) const {
+        mat3x3 t(*this);
+        t *= a;
+        return t;
+    }
+    mat3x3 operator * (const double &a) const {
+        mat3x3 t(*this);
+        t *= a;
+        return t;
+    }
+    vec3 operator * (const vec3 &a) const {
+        vec3 v;
+        for (int j = 0; j < 3; j++) {
+            double d = 0.0;
+            for (int i = 0; i < 3; i++) {
+                d += mat[j][i] * a(i);
+            }
+            v(j) = d;
+        }
+        return v;
+    }
+    template<typename Arg>
+    mat3x3 operator / (const Arg &a) const {
+        mat3x3 t(*this);
+        t /= a;
+        return t;
+    }
+    bool operator== (const mat3x3&r) const {
+        return memcmp(&mat[0][0], &r.mat[0][0], sizeof(mat)) == 0;
+    }
+    bool operator!= (const mat3x3& r) const {
+        return memcmp(&mat[0][0], &r.mat[0][0], sizeof(mat)) != 0;
+    }
+    double det() const {
+        const double determinant =
+            +mat[0][0]*(mat[1][1]*mat[2][2]-mat[2][1]*mat[1][2])
+            -mat[0][1]*(mat[1][0]*mat[2][2]-mat[1][2]*mat[2][0])
+            +mat[0][2]*(mat[1][0]*mat[2][1]-mat[1][1]*mat[2][0]);
+        return determinant;
+    }
+    double det2(double a00, double a01, double a10, double a11) const {
+        return a00 * a11 - a01 * a10;
+    }
+    mat3x3 inv() const {
+        const double invdet = 1.0 / det();
+
+        mat3x3 ret;
+        ret.mat[0][0] = det2(mat[1][1], mat[1][2], mat[2][1], mat[2][2]) * invdet;
+        ret.mat[0][1] = det2(mat[0][2], mat[0][1], mat[2][2], mat[2][1]) * invdet;
+        ret.mat[0][2] = det2(mat[0][1], mat[0][2], mat[1][1], mat[1][2]) * invdet;
+        ret.mat[1][0] = det2(mat[1][2], mat[1][0], mat[2][2], mat[2][0]) * invdet;
+        ret.mat[1][1] = det2(mat[0][0], mat[0][2], mat[2][0], mat[2][2]) * invdet;
+        ret.mat[1][2] = det2(mat[0][2], mat[0][0], mat[1][2], mat[1][0]) * invdet;
+        ret.mat[2][0] = det2(mat[1][0], mat[1][1], mat[2][0], mat[2][1]) * invdet;
+        ret.mat[2][1] = det2(mat[0][1], mat[0][0], mat[2][1], mat[2][0]) * invdet;
+        ret.mat[2][2] = det2(mat[0][0], mat[0][1], mat[1][0], mat[1][1]) * invdet;
+        return ret;
+    }
+    mat3x3 trans() const {
+        mat3x3 ret;
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                ret.mat[j][i] = mat[i][j];
+        return ret;
+    }
+    mat3x3 mul(const mat3x3& a, const mat3x3& b) {
+        mat3x3 ret;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                double accum = 0;
+                for (int k = 0; k < 3; k++) {
+                    accum += a.mat[i][k] * b.mat[k][j];
+                }
+                ret(i,j) = accum;
+            }
+        }
+        return ret;
+    }
+    static mat3x3 identity() {
+        mat3x3 ret;
+        for (int i = 0; i < 3; i++) {
+            ret.mat[i][i] = 1.0;
+        }
+        return ret;
+    }
+private:
+    double mat[3][3]; //[行][列]
+};
 
 struct rgy_time {
     int h, m, s, ms, us, ns;
@@ -770,8 +1031,6 @@ public:
         });
     }
 };
-
-int rgy_avx_dummy_if_avail(int bAVXAvail);
 
 unsigned short float2half(float value);
 
