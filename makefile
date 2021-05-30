@@ -3,14 +3,14 @@ include config.mak
 vpath %.cpp $(SRCDIR)
 
 OBJS    = $(SRCS:%.cpp=%.cpp.o)
-OBJASMS = $(SRCASMS:%.asm=%.cpp.o)
+OBJASMS = $(SRCASMS:%.asm=%.o)
 
 all: $(PROGRAM)
 
 $(PROGRAM): .depend $(OBJS) $(OBJASMS)
 	$(LD) $(OBJS) $(OBJASMS) $(LDFLAGS) -o $(PROGRAM)
 
-%.o: %.cpp .depend
+%.cpp.o: %.cpp .depend
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 %.o: %.asm

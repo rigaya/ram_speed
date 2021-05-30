@@ -56,10 +56,10 @@ cxx_check()
 rm -f config.* .depend
 
 ENABLE_DEBUG=0
-ENABLE_ASM=0
+ENABLE_ASM=1
 CXX=${CXX:-g++}
-AS=${CXX:-nasm}
-PROGRAM=ram_speed
+AS=${AS:-nasm}
+PROGRAM=ram_speed64
 PREFIX=${PREFIX:-/usr/local}
 EXTRACXXFLAGS=""
 EXTRALDFLAGS=""
@@ -109,6 +109,9 @@ for opt; do
             ;;
         --cxx=*)
             CXX="$optarg"
+            ;;
+        --as=*)
+            AS="$optarg"
             ;;
         --extra-cxxflags=*)
             EXTRACXXFLAGS="$optarg"
@@ -184,15 +187,34 @@ else
     LDFLAGS="${LDFLAGS} -m32"
 fi
 
-
-if cxx_check "c++17" "${CXXFLAGS} -std=c++14 ${LDFLAGS}" ; then
-    cnf_write "OK"
+if cxx_check "pthread" "${CXXFLAGS} ${LDFLAGS} -pthread" ; then
+    CXXFLAGS="${CXXFLAGS} -pthread"
+    LDFLAGS="${LDFLAGS} -pthread"
 else
-    cnf_write "${CXX} does not work with -std=c++14"
+    cnf_write "pthread not installed." 
+    exit 1
+fi
+cnf_write "OK"
+
+if cxx_check "c++17" "${CXXFLAGS} -std=c++17 ${LDFLAGS}" ; then
+    cnf_write "OK"
+    CXXFLAGS="-std=c++17 ${CXXFLAGS}"
+else
+    cnf_write "${CXX} does not work with -std=c++17"
     exit 1
 fi
 
 if [ $X86_64 -ne 0 ]; then
+    if [ $ENABLE_ASM -ne 0 ]; then
+        cnf_print "Checking for ${AS}..."
+        if [ `which ${AS}` ]; then
+            cnf_write "yes"
+        else
+            cnf_write "${AS} does not exist."
+            cnf_write "Install ${AS} or disable asm by \"--disable-asm\"."
+            exit 1
+        fi
+    fi
     if ! cxx_check "__rdtscp()" "${CXXFLAGS} ${EXTRACXXFLAGS} ${LDFLAGS}" "" "x86intrin.h" "unsigned int a = 0; auto i = __rdtscp(&a);" ; then
         CXXFLAGS="${CXXFLAGS} -DNO_RDTSCP_INTRIN=1"
         cnf_write "no"
@@ -210,6 +232,9 @@ fi
 
 if cxx_check "-fPIE" "${CXXFLAGS} -fPIE ${LDFLAGS}" ; then
     CXXFLAGS="$CXXFLAGS -fPIE"
+    cnf_write "yes"
+else
+    cnf_write "no"
 fi
 
 if [ ! $ENABLE_DEBUG -eq 0 ]; then
@@ -268,9 +293,11 @@ for src in $SRC_RAMSPEED_CPP; do
     SRCS="$SRCS ram_speed/$src"
 done
 
-for src in $SRC_RAMSPEED_ASM; do
-    SRCASMS="$SRCS ram_speed/$src"
-done
+if [ $ENABLE_ASM -ne 0 ]; then
+    for src in $SRC_RAMSPEED_ASM; do
+        SRCASMS="$SRCASMS ram_speed/$src"
+    done
+fi
 
 cnf_write ""
 cnf_write "Creating config.mak, rgy_config.h..."
