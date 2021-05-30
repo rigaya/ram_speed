@@ -80,11 +80,12 @@ options:
   --prefix=PREFIX          install nvencc into PREFIX/bin [${PREFIX}]
 
   --cxx=CXX                set C++ compiler path [${CXX}]
+  --as=AS                  set assembler path for x86_64 [${AS}]
+
+  --disable-asm            disable asm code for x86_64
 
   --extra-cxxflags=XCFLAGS add XCFLAGS to CFLAGS
   --extra-ldflags=XLDFLAGS add XLDFLAGS to LDFLAGS
-
-  --disable-asm            disable asm code
 EOF
 }
 
