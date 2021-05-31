@@ -12,8 +12,8 @@ It will run performace tests below.
 Please note that this app is sensitive to background tasks, and might not get expected results.
 
 ## System Requirements
-Windows 8.1/10 (x64)  
-Linux (x64)  
+Windows 8.1/10 (x86_64)  
+Linux (x86_64/others)  
 
 ## Results
 ### Tested Systems
@@ -57,9 +57,9 @@ Result of the bandwidth test, checking the bandwidth of the largest size tested.
 VC++2019 & nasm is required.
 
 ### Linux
-C++17 compiler is required, and also [nasm](https://www.nasm.us/) is recommended.  
+C++14 compiler is required, and also [nasm](https://www.nasm.us/) is recommended for x86 build.  
 
-However, it is possible to build without nasm, by adding ```--disable-asm``` when running configure script.
+However for non-x86 environments, it is possible to build without nasm, by adding ```--disable-asm``` when running configure script.
 
 ## Precautions for using ram_speed
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.  
