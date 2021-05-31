@@ -141,7 +141,7 @@ int getCPUName(char *buffer, size_t nSize) {
             name = ptr;
         }
     }
-    sprintf(buf, "%s (%s)", name.c_str(), arch.c_str());
+    sprintf(buffer, "%s (%s)", name.c_str(), arch.c_str());
     return 0;
 #endif
 }
@@ -275,7 +275,7 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 
     std::vector<processor_info_t> processor_list;
     processor_info_t info = { 0 };
-    info.processor_id = -1;
+    info.processor_id = info.core_id = info.socket_id = -1;
 
     for (auto line : split(script_data, "\n")) {
         auto pos = line.find("processor");
@@ -283,7 +283,10 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
             int i = 0;
             if (1 == sscanf(line.substr(line.find(":") + 1).c_str(), "%d", &i)) {
                 if (info.processor_id >= 0) {
+                    if (info.socket_id < 0) info.socket_id = 0; // physical id がない場合
+                    if (info.core_id < 0) info.core_id = info.processor_id; // core id がない場合
                     processor_list.push_back(info);
+                    info.processor_id = info.core_id = info.socket_id = -1; // 次に備えて初期化
                 }
                 info.processor_id = i;
             }
@@ -307,6 +310,8 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
         }
     }
     if (info.processor_id >= 0) {
+        if (info.socket_id < 0) info.socket_id = 0; // physical id がない場合
+        if (info.core_id < 0) info.core_id = info.processor_id; // core id がない場合
         processor_list.push_back(info);
     }
 
