@@ -352,7 +352,7 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count, int test_co
                         #define BLOCK_IDX(i, j, k) ((((ipage) * cl_block2 + (j)) * cl_block1 + (i)) * cl_size + (k))
                         if ((i|j|k) != 0) {
                             int page_unused = 0;
-                            for (int x = 0; x < cl_block2; x++) {
+                            for (index_t x = 0; x < cl_block2; x++) {
                                 index_t idx = BLOCK_IDX(i, x, k);
                                 if (idx < elems && buf_ptr[idx] == 0) {
                                     temp[page_unused] = idx;
@@ -387,7 +387,7 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count, int test_co
                 for (index_t i = 0; i < block_elems; i++) {
                     if ((i|j|k) != 0) {
                         int page_unused = 0;
-                        for (int x = 0; x < page_counts; x++) {
+                        for (index_t x = 0; x < page_counts; x++) {
                             index_t idx = BLOCK_IDX(i, j, x);
                             if (idx < elems && buf_ptr[idx] == 0) {
                                 temp[page_unused] = idx;
@@ -423,7 +423,7 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count, int test_co
                 while (indexes[idx] == 0) {
                     idx = dist(mt);
                 }
-                if (std::abs(((int64_t)prev_idx - indexes[idx])) >= 128 / sizeof(index_t)) break;
+                if (std::abs(((int64_t)prev_idx - indexes[idx])) >= (int64_t)(128 / sizeof(index_t))) break;
             }
             buf_ptr[prev_idx] = indexes[idx];
             prev_idx = indexes[idx];
