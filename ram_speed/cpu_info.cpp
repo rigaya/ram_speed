@@ -141,7 +141,7 @@ int getCPUName(char *buffer, size_t nSize) {
             name = ptr;
         }
     }
-    sprintf(buffer, "%s (%s)", name.c_str(), arch.c_str());
+    sprintf(buffer, "%s %s", name.c_str(), arch.c_str());
     return 0;
 #endif
 }
