@@ -59,7 +59,7 @@ ENABLE_DEBUG=0
 ENABLE_ASM=1
 CXX=${CXX:-g++}
 AS=${AS:-nasm}
-PROGRAM=ram_speed64
+PROGRAM=ramspeed
 PREFIX=${PREFIX:-/usr/local}
 EXTRACXXFLAGS=""
 EXTRALDFLAGS=""
@@ -177,7 +177,7 @@ CXXINC=" \
 "
 CXXFLAGS="-Wall -Wno-unknown-pragmas -Wno-unused -Wno-missing-braces -I./ram_speed"
 
-LDFLAGS="-L. -ldl -lstdc++"
+LDFLAGS="-L. -static -static-libgcc -static-libstdc++ -ldl -lrt"
 if [ $ARM64 -ne 0 ]; then
     CXXINC="${CXXINC} -DLINUX64"
 elif [ $X86_64 -ne 0 ]; then
@@ -190,7 +190,7 @@ fi
 
 if cxx_check "pthread" "${CXXFLAGS} ${LDFLAGS} -pthread" ; then
     CXXFLAGS="${CXXFLAGS} -pthread"
-    LDFLAGS="${LDFLAGS} -pthread"
+    LDFLAGS="${LDFLAGS} -pthread -Wl,--whole-archive -lpthread -Wl,--no-whole-archive"
 else
     cnf_write "pthread not installed." 
     exit 1
