@@ -1,6 +1,7 @@
 #!/bin/sh
 
 PACKAGE_NAME=ramspeed
+PACKAGE_BIN=ramspeed
 PACKAGE_OS=
 PACKAGE_MAINTAINER=rigaya
 PACKAGE_DEPENDS=
@@ -15,6 +16,7 @@ build_debpkg/replace.py \
     -i build_debpkg/template/DEBIAN/control \
     -o ${PACKAGE_ROOT}/DEBIAN/control \
     --pkg-name ${PACKAGE_NAME} \
+    --pkg-bin ${PACKAGE_BIN} \
     --pkg-version ${PACKAGE_VERSION} \
     --pkg-arch ${PACKAGE_ARCH} \
     --pkg-maintainer ${PACKAGE_MAINTAINER} \

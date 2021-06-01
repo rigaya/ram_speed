@@ -8,6 +8,7 @@
 .depend
 .debpkg
 *.deb
+*.rpm
 
 # Build results
 
