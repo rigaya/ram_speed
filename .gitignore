@@ -5,6 +5,9 @@
 *.suo
 *.user
 *.sln.docstates
+.depend
+.debpkg
+*.deb
 
 # Build results
 
@@ -14,7 +17,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
-ram_speed64
+ramspeed
 config.mak
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
