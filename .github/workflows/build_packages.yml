@@ -101,7 +101,7 @@ jobs:
           docker run -dit --rm -v ${{ steps.prep.outputs.output_dir }}:/output -u "$(id -u):$(id -g)" --name build_pkg ${{ steps.prep.outputs.tagged_image }}
           docker exec build_pkg ./configure
           docker exec build_pkg make -j${{ steps.prep.outputs.nproc }}
-          docker exec build_pkg ./ramspeed --help
+          docker exec build_pkg ./ramspeed --version
           docker exec build_pkg ./build_${{ env.PKG_TYPE }}.sh
           docker exec build_pkg sh -c "cp -v ./*.${{ env.PKG_TYPE }} /output/"
           PKGFILE=`ls ${{ steps.prep.outputs.output_dir }}/*.${{ env.PKG_TYPE }}`

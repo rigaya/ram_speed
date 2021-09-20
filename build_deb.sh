@@ -12,8 +12,8 @@ PACKAGE_ARCH=`uname -m`
 PACKAGE_ARCH=`echo ${PACKAGE_ARCH} | sed -e 's/x86_64/amd64/g'`
 
 mkdir -p ${PACKAGE_ROOT}/DEBIAN
-build_debpkg/replace.py \
-    -i build_debpkg/template/DEBIAN/control \
+build_pkg/replace.py \
+    -i build_pkg/template/DEBIAN/control \
     -o ${PACKAGE_ROOT}/DEBIAN/control \
     --pkg-name ${PACKAGE_NAME} \
     --pkg-bin ${PACKAGE_BIN} \
