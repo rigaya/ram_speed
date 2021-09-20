@@ -1,0 +1,21 @@
+FROM fedora:32
+
+ARG LOCAL_USER_ID=1000 \
+    LOCAL_GROUP_ID=1000
+
+RUN dnf update -y \
+    && dnf install -y \
+      which \ 
+      @development-tools \
+      glibc-static \
+      libstdc++-static \
+      nasm \
+      rpm-build \
+    && dnf clean all
+
+RUN useradd -u $LOCAL_USER_ID -m --user-group --shell /bin/bash rigaya
+RUN groupmod -g $LOCAL_GROUP_ID rigaya
+WORKDIR /home/rigaya
+COPY . .
+RUN chown -R rigaya:rigaya .
+USER rigaya
