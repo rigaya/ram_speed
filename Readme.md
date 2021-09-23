@@ -2,6 +2,8 @@
 # ram_speed
 by rigaya
 
+[![Build status](https://ci.appveyor.com/api/projects/status/g49gubqyf8pkblsh?svg=true)](https://ci.appveyor.com/project/rigaya/ram-speed)  [![Build Linux Packages](https://github.com/rigaya/ram_speed/actions/workflows/build_packages.yml/badge.svg?branch=master)](https://github.com/rigaya/ram_speed/actions/workflows/build_packages.yml)  
+
 This is an attempt to measure RAM and cache performace.
 
 It will run performace tests below.
