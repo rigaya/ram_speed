@@ -214,13 +214,15 @@ tstring getOSVersion() {
             }
         }
     }
+    struct utsname buf;
+    uname(&buf);
     if (str.length() == 0) {
-        struct utsname buf;
-        uname(&buf);
         str += buf.sysname;
         str += " ";
-        str += buf.release;
     }
+    str += " (";
+    str += buf.release; //kernelのバージョン
+    str += ")";
     return char_to_tstring(trim(str));
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
@@ -269,7 +271,7 @@ tstring getACPCodepageStr() {
 }
 #endif
 
-tstring getEnviromentInfo(int device_id) {
+tstring getEnviromentInfo([[maybe_unused]] int device_id) {
     tstring buf;
 
     TCHAR cpu_info[1024] = { 0 };
