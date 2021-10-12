@@ -426,6 +426,114 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
         }
     }
 
+    //キャッシュの情報を作る
+    std::vector<cache_info_t> caches;
+    for (int ip = 0; ip < cpu_info->physical_cores; ip++) {
+        const auto& targetCore = &cpu_info->proc_list[ip];
+        uint64_t mask = 0;
+        for (int index = 0; ; index++) {
+            cache_info_t cacheinfo;
+
+            char buffer[256];
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d", targetCore->processor_id, index);
+            struct stat st;
+            if (stat(buffer, &st) != 0) break;
+
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_list", targetCore->processor_id, index);
+            FILE *fp = fopen(buffer, "r");
+            while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                for (auto numstr : split(buffer, ",")) {
+                    int value0 = 0, value1 = 0;
+                    if (sscanf_s(buffer, "%d-%d", &value0, &value1) == 2) {
+                        for (int iv = value0; iv <= value1; iv++) {
+                            mask |= 1llu << iv;
+                        }
+                    } else if (sscanf_s(buffer, "%d", &value0) == 1) {
+                        mask |= 1llu << value0;
+                    }
+                }
+            }
+            fclose(fp);
+            cacheinfo.mask = mask;
+
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/level", targetCore->processor_id, index);
+            fp = fopen(buffer, "r");
+            while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                try {
+                    cacheinfo.level = (RGYCacheLevel)std::stoi(buffer);
+                } catch (...) {};
+            }
+            fclose(fp);
+
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/size", targetCore->processor_id, index);
+            fp = fopen(buffer, "r");
+            while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                int value = 0;
+                if (sscanf_s(buffer, "%dK", &value) == 1) {
+                     cacheinfo.size = value * 1024;
+                } else if (sscanf_s(buffer, "%dM", &value) == 1) {
+                     cacheinfo.size = value * 1024 * 1024;
+                } else if (sscanf_s(buffer, "%dG", &value) == 1) {
+                     cacheinfo.size = value * 1024 * 1024 * 1024;
+                } else if (sscanf_s(buffer, "%d", &value) == 1) {
+                     cacheinfo.size = value;
+                }
+            }
+            fclose(fp);
+
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/ways_of_associativity", targetCore->processor_id, index);
+            fp = fopen(buffer, "r");
+            while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                try {
+                    cacheinfo.associativity = std::stoi(buffer);
+                } catch (...) {};
+            }
+            fclose(fp);
+
+            sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/type", targetCore->processor_id, index);
+            fp = fopen(buffer, "r");
+            while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                if (strncasecmp(buffer, "Instruction", strlen("Instruction")) == 0) {
+                    cacheinfo.type = RGYCacheType::Instruction;
+                    break;
+                } else if (strncasecmp(buffer, "Data", strlen("Data")) == 0) {
+                    cacheinfo.type = RGYCacheType::Data;
+                    break;
+                } else if (strncasecmp(buffer, "Unified", strlen("Unified")) == 0) {
+                    cacheinfo.type = RGYCacheType::Unified;
+                    break;
+                }
+            }
+            fclose(fp);
+
+            auto sameCache = std::find_if(caches.begin(), caches.end(), [&cacheinfo](const cache_info_t& c){
+                return cacheinfo.type == c.type
+                    && cacheinfo.level == c.level
+                    && ((cacheinfo.mask & c.mask) != 0);
+            });
+            if (sameCache != caches.end()) {
+                sameCache->mask |= cacheinfo.mask;
+            } else {
+                caches.push_back(cacheinfo);
+            }
+        }
+    }
+
+    for (int ilevel = 0; ilevel < MAX_CACHE_LEVEL; ilevel++) {
+        cpu_info->cache_count[ilevel] = 0;
+    }
+    for (const auto& c : caches) {
+        const int ilevel = (int)c.level - 1;
+        const int icacheidx = cpu_info->cache_count[ilevel]++;
+        cpu_info->caches[ilevel][icacheidx] = c;
+    }
+    for (int ilevel = 0; ilevel < MAX_CACHE_LEVEL; ilevel++) {
+        if (cpu_info->cache_count[ilevel] > 0) {
+            cpu_info->max_cache_level = ilevel+1;
+        }
+    }
+
+    //ノードの情報を作る
     cpu_info->node_count = processor_list.back().socket_id + 1;
     //初期化
     for (int in = 0; in < cpu_info->node_count; in++) {
