@@ -187,6 +187,7 @@ bool getCPUHybridMasks(cpu_info_t *info) {
 #else
     const auto threadCount = info->physical_cores;
 #endif
+#if defined(__x86__) || defined(__x86_64__) || defined(_M_X86) || defined(_M_X64)
     const auto hThread = GetCurrentThread();
     size_t maskOriginal = 0;
     for (int ith = 0; ith < threadCount; ith++) {
@@ -217,7 +218,7 @@ bool getCPUHybridMasks(cpu_info_t *info) {
             info->physical_cores_e++;
         }
     }
-
+#endif //#if defined(__x86__) || defined(__x86_64__) || defined(_M_X86) || defined(_M_X64)
     return true;
 }
 
