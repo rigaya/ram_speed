@@ -595,6 +595,9 @@ std::string printHelp() {
     str += "-v, --version    print version\n";
     str += "-h, --help       print help\n";
     str += "\n";
+    str += "    --target <string>      target to run test on\n";
+    str += "      physical(default), pcore, ecore\n";
+    str += "\n";
     str += "    --mem-only             check ram only\n";
     str += "\n";
     str += "    --no-latency           disable latency tests\n";
@@ -718,7 +721,7 @@ int main(int argc, char **argv) {
     const cpu_info_t cpu_info = get_cpu_info();
     if (check_latency_intercore) {
         const int target_core_count = get_target_core_count(&cpu_info, prm.thread_affinity_mode);
-        print(fp.get(), "inter core latency\n");
+        print(fp.get(), "inter core latency (ns)\n");
         for (int j = 0; j < target_core_count; j++) {
             for (int i = 0; i < target_core_count; i++) {
                 const auto& proc_info = cpu_info.proc_list[i];
@@ -744,7 +747,7 @@ int main(int argc, char **argv) {
         const auto maskPrev = SetThreadAffinityMask(GetCurrentThread(), RGYThreadAffinity(prm.thread_affinity_mode).getMask(0));
         std::this_thread::sleep_for(std::chrono::milliseconds(0));
 
-        print(fp.get(), "\nram latency\n");
+        print(fp.get(), "\nram latency (ns)\n");
         const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
         const std::map<RamLatencyTest, std::string> latency_tests_name = {
             { RL_TEST_SEQUENTIAL, "sequantial" },
@@ -785,7 +788,7 @@ int main(int argc, char **argv) {
     }
 
     if (check_bandwidth_read) {
-        print(fp.get(), "\nread\n");
+        print(fp.get(), "\nread bandwidth (GB/s)\n");
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
                 break;
@@ -808,7 +811,7 @@ int main(int argc, char **argv) {
     }
 
     if (check_bandwidth_write) {
-        print(fp.get(), "\nwrite\n");
+        print(fp.get(), "\nwrite bandwidth (GB/s)\n");
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             if (i_size >= sizeof(size_t) * 8) {
                 break;
