@@ -444,11 +444,11 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
             while (fgets(buffer, _countof(buffer), fp) != NULL) {
                 for (auto numstr : split(buffer, ",")) {
                     int value0 = 0, value1 = 0;
-                    if (sscanf_s(buffer, "%d-%d", &value0, &value1) == 2) {
+                    if (sscanf_s(numstr.c_str(), "%d-%d", &value0, &value1) == 2) {
                         for (int iv = value0; iv <= value1; iv++) {
                             mask |= 1llu << iv;
                         }
-                    } else if (sscanf_s(buffer, "%d", &value0) == 1) {
+                    } else if (sscanf_s(numstr.c_str(), "%d", &value0) == 1) {
                         mask |= 1llu << value0;
                     }
                 }
@@ -828,12 +828,12 @@ tstring print_cpu_info(const cpu_info_t *cpu_info) {
         for (int icache_level = 0; icache_level < MAX_CACHE_LEVEL; icache_level++) {
             for (int ic = 0; ic < cpu_info->cache_count[icache_level]; ic++) {
                 auto& targetCache = cpu_info->caches[icache_level][ic];
-                str += strsprintf(_T("  cache L%d%s %2dway %6dKB: "), icache_level + 1, RGYCacheTypeToStr(targetCache.type), targetCache.associativity, targetCache.size / 1024);
+                str += strsprintf(_T("  cache L%d%s : "), icache_level + 1, RGYCacheTypeToStr(targetCache.type));
                 for (int il = 0; il < cpu_info->logical_cores; il++) {
                     const auto mask = 1llu << il;
                     str += (mask & targetCache.mask) ? _T("*") : _T("-");
                 }
-                str += _T("\n");
+                str += strsprintf(_T(" : %2dway %6dKB\n"), targetCache.associativity, targetCache.size / 1024);
             }
         }
     }
