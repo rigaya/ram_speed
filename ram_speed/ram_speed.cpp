@@ -715,10 +715,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to open output file.\n");
         return 1;
     }
+    const cpu_info_t cpu_info = get_cpu_info();
+
     print(fp.get(), "%s\n\n", printVersion().c_str());
     print(fp.get(), "%s\n", getEnviromentInfo().c_str());
+    print(fp.get(), "%s\n", print_cpu_info(&cpu_info).c_str());
 
-    const cpu_info_t cpu_info = get_cpu_info();
     if (check_latency_intercore) {
         const int target_core_count = get_target_core_count(&cpu_info, prm.thread_affinity_mode);
         print(fp.get(), "inter core latency (ns)\n");
