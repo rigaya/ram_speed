@@ -442,70 +442,82 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
 
             sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_list", targetCore->processor_id, index);
             FILE *fp = fopen(buffer, "r");
-            while (fgets(buffer, _countof(buffer), fp) != NULL) {
-                for (auto numstr : split(buffer, ",")) {
-                    int value0 = 0, value1 = 0;
-                    if (sscanf_s(numstr.c_str(), "%d-%d", &value0, &value1) == 2) {
-                        for (int iv = value0; iv <= value1; iv++) {
-                            mask |= 1llu << iv;
+            if (fp) {
+                while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                    for (auto numstr : split(buffer, ",")) {
+                        int value0 = 0, value1 = 0;
+                        if (sscanf_s(numstr.c_str(), "%d-%d", &value0, &value1) == 2) {
+                            for (int iv = value0; iv <= value1; iv++) {
+                                mask |= 1llu << iv;
+                            }
+                        } else if (sscanf_s(numstr.c_str(), "%d", &value0) == 1) {
+                            mask |= 1llu << value0;
                         }
-                    } else if (sscanf_s(numstr.c_str(), "%d", &value0) == 1) {
-                        mask |= 1llu << value0;
                     }
                 }
+                fclose(fp);
             }
-            fclose(fp);
             cacheinfo.mask = mask;
 
             sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/level", targetCore->processor_id, index);
             fp = fopen(buffer, "r");
-            while (fgets(buffer, _countof(buffer), fp) != NULL) {
-                try {
-                    cacheinfo.level = (RGYCacheLevel)std::stoi(buffer);
-                } catch (...) {};
+            if (fp) {
+                while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                    int value = 0;
+                    if (sscanf_s(buffer, "%d", &value) == 1) {
+                        cacheinfo.level = (RGYCacheLevel)value;
+                    }
+                }
+                fclose(fp);
             }
-            fclose(fp);
 
             sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/size", targetCore->processor_id, index);
             fp = fopen(buffer, "r");
-            while (fgets(buffer, _countof(buffer), fp) != NULL) {
-                int value = 0;
-                if (sscanf_s(buffer, "%dK", &value) == 1) {
-                     cacheinfo.size = value * 1024;
-                } else if (sscanf_s(buffer, "%dM", &value) == 1) {
-                     cacheinfo.size = value * 1024 * 1024;
-                } else if (sscanf_s(buffer, "%dG", &value) == 1) {
-                     cacheinfo.size = value * 1024 * 1024 * 1024;
-                } else if (sscanf_s(buffer, "%d", &value) == 1) {
-                     cacheinfo.size = value;
+            if (fp) {
+                while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                    int value = 0;
+                    if (sscanf_s(buffer, "%dK", &value) == 1) {
+                        cacheinfo.size = value * 1024;
+                    } else if (sscanf_s(buffer, "%dM", &value) == 1) {
+                        cacheinfo.size = value * 1024 * 1024;
+                    } else if (sscanf_s(buffer, "%dG", &value) == 1) {
+                        cacheinfo.size = value * 1024 * 1024 * 1024;
+                    } else if (sscanf_s(buffer, "%d", &value) == 1) {
+                        cacheinfo.size = value;
+                    }
                 }
+                fclose(fp);
             }
-            fclose(fp);
 
             sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/ways_of_associativity", targetCore->processor_id, index);
             fp = fopen(buffer, "r");
-            while (fgets(buffer, _countof(buffer), fp) != NULL) {
-                try {
-                    cacheinfo.associativity = std::stoi(buffer);
-                } catch (...) {};
+            if (fp) {
+                while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                    int value = 0;
+                    if (sscanf_s(buffer, "%d", &value) == 1) {
+                        cacheinfo.associativity = (RGYCacheLevel)value;
+                    }
+                }
+                fclose(fp);
             }
-            fclose(fp);
 
             sprintf_s(buffer, "/sys/devices/system/cpu/cpu%d/cache/index%d/type", targetCore->processor_id, index);
             fp = fopen(buffer, "r");
-            while (fgets(buffer, _countof(buffer), fp) != NULL) {
-                if (strncasecmp(buffer, "Instruction", strlen("Instruction")) == 0) {
-                    cacheinfo.type = RGYCacheType::Instruction;
-                    break;
-                } else if (strncasecmp(buffer, "Data", strlen("Data")) == 0) {
-                    cacheinfo.type = RGYCacheType::Data;
-                    break;
-                } else if (strncasecmp(buffer, "Unified", strlen("Unified")) == 0) {
-                    cacheinfo.type = RGYCacheType::Unified;
-                    break;
+            if (fp) {
+                while (fgets(buffer, _countof(buffer), fp) != NULL) {
+                    if (strncasecmp(buffer, "Instruction", strlen("Instruction")) == 0) {
+                        cacheinfo.type = RGYCacheType::Instruction;
+                        break;
+                    } else if (strncasecmp(buffer, "Data", strlen("Data")) == 0) {
+                        cacheinfo.type = RGYCacheType::Data;
+                        break;
+                    } else if (strncasecmp(buffer, "Unified", strlen("Unified")) == 0) {
+                        cacheinfo.type = RGYCacheType::Unified;
+                        break;
+                    }
                 }
+                fclose(fp);
             }
-            fclose(fp);
 
             auto sameCache = std::find_if(caches.begin(), caches.end(), [&cacheinfo](const cache_info_t& c){
                 return cacheinfo.type == c.type

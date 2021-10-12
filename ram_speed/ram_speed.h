@@ -26,9 +26,8 @@
 // --------------------------------------------------------------------------------------------
 
 #pragma once
-#include <vector>
 
-#define RAM_SPEED_VERSION "0.01"
+#define RAM_SPEED_VERSION "0.02"
 
 enum RamSpeedMode {
     READ = 0,
