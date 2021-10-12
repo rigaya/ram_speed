@@ -40,10 +40,8 @@ enum class RGYThreadAffinityMode {
     ECORE,
     LOGICAL,
     PHYSICAL,
-#if defined(_WIN32) || defined(_WIN64)
     CACHEL2,
     CACHEL3,
-#endif //#if defined(_WIN32) || defined(_WIN64)
     CUSTOM,
     END
 };
@@ -54,10 +52,8 @@ static const std::array<std::pair<const TCHAR *, RGYThreadAffinityMode>, (int)RG
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("ecore"),    RGYThreadAffinityMode::ECORE    },
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("logical"),  RGYThreadAffinityMode::LOGICAL  },
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("physical"), RGYThreadAffinityMode::PHYSICAL },
-#if defined(_WIN32) || defined(_WIN64)
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("cachel2"),  RGYThreadAffinityMode::CACHEL2  },
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("cachel3"),  RGYThreadAffinityMode::CACHEL3  },
-#endif //#if defined(_WIN32) || defined(_WIN64)
     std::pair<const TCHAR *, RGYThreadAffinityMode>{ _T("custom"),   RGYThreadAffinityMode::CUSTOM   }
 };
 

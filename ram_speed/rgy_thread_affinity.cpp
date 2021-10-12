@@ -144,7 +144,6 @@ uint64_t RGYThreadAffinity::getMask() const {
             }
         }
         break;
-#if defined(_WIN32) || defined(_WIN64)
     case RGYThreadAffinityMode::CACHEL2:
         for (int i = 0; i < cpu_info.cache_count[1]; i++) {
             const auto target = 1llu << i;
@@ -161,7 +160,6 @@ uint64_t RGYThreadAffinity::getMask() const {
             }
         }
         break;
-#endif
     case RGYThreadAffinityMode::CUSTOM: mask = (custom) ? custom & cpu_info.maskSystem : cpu_info.maskSystem; break;
     case RGYThreadAffinityMode::ALL:
     default: mask = cpu_info.maskSystem; break;
