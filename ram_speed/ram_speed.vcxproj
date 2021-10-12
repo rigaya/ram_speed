@@ -191,6 +191,7 @@
     <ClCompile Include="rgy_codepage.cpp" />
     <ClCompile Include="rgy_env.cpp" />
     <ClCompile Include="rgy_simd.cpp" />
+    <ClCompile Include="rgy_thread_affinity.cpp" />
     <ClCompile Include="rgy_util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -201,6 +202,7 @@
     <ClInclude Include="rgy_osdep.h" />
     <ClInclude Include="rgy_simd.h" />
     <ClInclude Include="rgy_tchar.h" />
+    <ClInclude Include="rgy_thread_affinity.h" />
     <ClInclude Include="rgy_util.h" />
   </ItemGroup>
   <ItemGroup>

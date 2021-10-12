@@ -148,6 +148,79 @@ int getCPUName(char *buffer, size_t nSize) {
 #endif
 }
 
+static inline uint32_t CountSetBits(size_t bits) {
+    if constexpr (sizeof(size_t) > 4) {
+        bits = (bits & 0x5555555555555555) + (bits >>  1 & 0x5555555555555555);
+        bits = (bits & 0x3333333333333333) + (bits >>  2 & 0x3333333333333333);
+        bits = (bits & 0x0f0f0f0f0f0f0f0f) + (bits >>  4 & 0x0f0f0f0f0f0f0f0f);
+        bits = (bits & 0x00ff00ff00ff00ff) + (bits >>  8 & 0x00ff00ff00ff00ff);
+        bits = (bits & 0x0000ffff0000ffff) + (bits >> 16 & 0x0000ffff0000ffff);
+        bits = (bits & 0x00000000ffffffff) + (bits >> 32 & 0x00000000ffffffff);
+    } else {
+        bits = (bits & 0x55555555) + (bits >> 1 & 0x55555555);
+        bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
+        bits = (bits & 0x0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f);
+        bits = (bits & 0x00ff00ff) + (bits >> 8 & 0x00ff00ff);
+        bits = (bits & 0x0000ffff) + (bits >>16 & 0x0000ffff);
+    }
+    return (uint32_t)bits;
+}
+
+bool getCPUHybridMasks(cpu_info_t *info) {
+    info->maskSystem = 0;
+    info->maskCoreP = 0;
+    info->maskCoreE = 0;
+#if _MSC_VER
+    DWORD_PTR maskProcess = 0;
+    DWORD_PTR maskSysAff = 0;
+    if (GetProcessAffinityMask(GetCurrentProcess(), &maskProcess, &maskSysAff) == 0) {
+        info->maskSystem = 0;
+        info->maskCoreP = 0;
+        info->maskCoreE = 0;
+        for (uint64_t i = 0; i < info->logical_cores; i++) {
+            info->maskSystem |= (1llu << i);
+        }
+        return false;
+    }
+    info->maskSystem = maskSysAff;
+    const auto threadCount = (int)CountSetBits(info->maskSystem);
+#else
+    const auto threadCount = info->physical_cores;
+#endif
+    const auto hThread = GetCurrentThread();
+    size_t maskOriginal = 0;
+    for (int ith = 0; ith < threadCount; ith++) {
+        const auto maskTarget = (size_t)1u << ith;
+        auto maskPrev = SetThreadAffinityMask(hThread, maskTarget);
+        if (maskOriginal == 0) {
+            maskOriginal = maskPrev;
+        }
+        std::this_thread::sleep_for(std::chrono::microseconds(0));
+        int CPUInfo[4] = { 0 };
+        __cpuid(CPUInfo, 0x1A);
+        const auto hybridInfo = CPUInfo[0 /*EAX*/] >> 24;
+        if (hybridInfo == 0x20) {
+            info->maskCoreE |= maskTarget;
+        } else if (hybridInfo == 0x40) {
+            info->maskCoreP |= maskTarget;
+        }
+    }
+    SetThreadAffinityMask(hThread, maskOriginal); // 元に戻す
+
+    info->physical_cores_e = 0;
+    info->physical_cores_p = 0;
+    for (int i = 0; i < info->physical_cores; i++) {
+        const auto maskTarget = info->proc_list[i].mask;
+        if (info->maskCoreP & maskTarget) {
+            info->physical_cores_p++;
+        } else if (info->maskCoreE & maskTarget) {
+            info->physical_cores_e++;
+        }
+    }
+
+    return true;
+}
+
 #if _MSC_VER
 static int getCPUName(wchar_t *buffer, size_t nSize) {
     int ret = 0;
@@ -186,20 +259,17 @@ double getCPUDefaultClockFromCPUName() {
 
 typedef BOOL (WINAPI *LPFN_GLPI)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
 
-static DWORD CountSetBits(ULONG_PTR bitMask) {
-    DWORD LSHIFT = sizeof(ULONG_PTR)*8 - 1;
-    DWORD bitSetCount = 0;
-    for (ULONG_PTR bitTest = (ULONG_PTR)1 << LSHIFT; bitTest; bitTest >>= 1)
-        bitSetCount += ((bitMask & bitTest) != 0);
-
-    return bitSetCount;
-}
-
 bool get_cpu_info(cpu_info_t *cpu_info) {
-    if (nullptr == cpu_info)
+    if (cpu_info == nullptr)
         return false;
 
-    memset(cpu_info, 0, sizeof(cpu_info[0]));
+    static cpu_info_t s_cpu_info = { 0 };
+    if (s_cpu_info.physical_cores > 0) {
+        *cpu_info = s_cpu_info;
+        return true;
+    }
+
+    s_cpu_info = cpu_info_t({ 0 });
 
     LPFN_GLPI glpi = (LPFN_GLPI)GetProcAddress(GetModuleHandle(_T("kernel32")), "GetLogicalProcessorInformation");
     if (nullptr == glpi)
@@ -223,26 +293,32 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
         switch (ptr->Relationship) {
         case RelationNumaNode:
             // Non-NUMA systems report a single record of this type.
-            cpu_info->nodes++;
+            s_cpu_info.nodes[s_cpu_info.node_count++].mask = ptr->ProcessorMask;
             break;
-        case RelationProcessorCore:
-            cpu_info->physical_cores++;
+        case RelationProcessorCore: {
+            auto& proc = s_cpu_info.proc_list[s_cpu_info.physical_cores];
+            proc.core_id = s_cpu_info.physical_cores;
+            proc.processor_id = s_cpu_info.physical_cores;
+            proc.logical_cores = CountSetBits(ptr->ProcessorMask);
+            proc.mask = ptr->ProcessorMask;
             // A hyperthreaded core supplies more than one logical processor.
-            cpu_info->logical_cores += CountSetBits(ptr->ProcessorMask);
-            break;
-
+            s_cpu_info.logical_cores += proc.logical_cores;
+            s_cpu_info.physical_cores++;
+        } break;
         case RelationCache:
         {
             // Cache data is in ptr->Cache, one CACHE_DESCRIPTOR structure for each cache.
             PCACHE_DESCRIPTOR Cache = &ptr->Cache;
-            if (1 <= Cache->Level && Cache->Level <= _countof(cpu_info->caches)) {
-                cache_info_t *cache = &cpu_info->caches[Cache->Level-1];
-                cache->count++;
-                cache->level = Cache->Level;
+            if (1 <= Cache->Level && Cache->Level <= _countof(s_cpu_info.cache_count)) {
+                const int cacheIdx = s_cpu_info.cache_count[Cache->Level - 1]++;
+                cache_info_t *cache = &s_cpu_info.caches[Cache->Level-1][cacheIdx];
+                cache->type = (RGYCacheType)Cache->Type;
+                cache->level = (RGYCacheLevel)Cache->Level;
                 cache->linesize = Cache->LineSize;
-                cache->size += Cache->Size;
+                cache->size = Cache->Size;
                 cache->associativity = Cache->Associativity;
-                cpu_info->max_cache_level = (std::max)(cpu_info->max_cache_level, cache->level);
+                cache->mask = ptr->ProcessorMask;
+                s_cpu_info.max_cache_level = (std::max)(s_cpu_info.max_cache_level, (int)cache->level);
             }
             break;
         }
@@ -260,6 +336,8 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
     if (buffer)
         free(buffer);
 
+    getCPUHybridMasks(&s_cpu_info);
+    *cpu_info = s_cpu_info;
     return true;
 }
 
@@ -317,25 +395,90 @@ bool get_cpu_info(cpu_info_t *cpu_info) {
         processor_list.push_back(info);
     }
 
+    //ここまでで論理コアの情報を作った
+    //cpu_infoに登録するのは物理コアの情報なので、整理しなおす
+    //いったんsocket→core→processorの順でソート
     std::sort(processor_list.begin(), processor_list.end(), [](const processor_info_t& a, const processor_info_t& b) {
         if (a.socket_id != b.socket_id) return a.socket_id < b.socket_id;
         if (a.core_id != b.core_id) return a.core_id < b.core_id;
         return a.processor_id < b.processor_id;
     });
-    int physical_core_count = 0;
-    uint64_t last_key = UINT64_MAX;
-    for (uint32_t i = 0; i < processor_list.size(); i++) {
-        uint64_t key = ((uint64_t)processor_list[i].socket_id << 32) | processor_list[i].core_id;
-        physical_core_count += key != last_key;
-        last_key = key;
-    }
-    memcpy(cpu_info->proc_list, processor_list.data(), sizeof(processor_list[0]) * processor_list.size());
-    cpu_info->nodes = processor_list.back().socket_id + 1;
-    cpu_info->physical_cores = physical_core_count;
+
+    cpu_info->max_cache_level = 0;
+    cpu_info->physical_cores = 0;
     cpu_info->logical_cores = processor_list.size();
+
+    processor_info_t *prevCore = nullptr;
+    for (size_t ip = 0; ip < processor_list.size(); ip++) {
+        if (prevCore != nullptr
+            && prevCore->socket_id == processor_list[ip].socket_id
+            && prevCore->core_id   == processor_list[ip].core_id) {
+            // 同じソケットの同じコアならそれは論理コア
+            prevCore->logical_cores++;
+            prevCore->mask |= 1llu << processor_list[ip].processor_id;
+        } else {
+            auto targetCore = &cpu_info->proc_list[cpu_info->physical_cores];
+            *targetCore = processor_list[ip];
+            targetCore->logical_cores = 1;
+            targetCore->mask = 1llu << processor_list[ip].processor_id;
+            cpu_info->physical_cores++;
+            prevCore = targetCore;
+        }
+    }
+
+    cpu_info->node_count = processor_list.back().socket_id + 1;
+    //初期化
+    for (int in = 0; in < cpu_info->node_count; in++) {
+        cpu_info->nodes[in].mask = 0;
+    }
+    for (int ip = 0; ip < cpu_info->physical_cores; ip++) {
+        auto& targetCore = cpu_info->proc_list[ip];
+        cpu_info->nodes[targetCore.socket_id].mask |= targetCore.mask;
+    }
+
+    getCPUHybridMasks(cpu_info);
     return true;
 }
 #endif //#if defined(_WIN32) || defined(_WIN64)
+
+
+const processor_info_t *get_core_info(const cpu_info_t *cpu_info, RGYCoreType type, int id) {
+    switch (type) {
+    case RGYCoreType::Physical: return (id < cpu_info->physical_cores) ? &cpu_info->proc_list[id] : nullptr;
+    case RGYCoreType::Logical: {
+        const uint64_t mask = 1llu << id;
+        for (int i = 0; i < cpu_info->physical_cores; i++) {
+            if (mask & cpu_info->proc_list[i].mask) {
+                return &cpu_info->proc_list[i];
+            }
+        }
+        return nullptr;
+    }
+    default: return nullptr;
+    }
+}
+uint64_t get_core_mask(const cpu_info_t *cpu_info, RGYCoreType type, int id) {
+    auto ptr = get_core_info(cpu_info, type, id);
+    return (ptr) ? ptr->mask : 0;
+}
+const cache_info_t *get_cache_info(const cpu_info_t *cpu_info, RGYCacheLevel level, int id) {
+    if (RGYCacheLevel::L1 <= level && level <= RGYCacheLevel::L4) {
+        return (id < cpu_info->cache_count[(int)level - 1]) ? &cpu_info->caches[(int)level - 1][id] : nullptr;
+    }
+    return nullptr;
+}
+uint64_t get_cache_mask(const cpu_info_t *cpu_info, RGYCacheLevel level, int id) {
+    auto ptr = get_cache_info(cpu_info, level, id);
+    return (ptr) ? ptr->mask : 0;
+}
+uint64_t get_mask(const cpu_info_t *cpu_info, RGYUnitType unit_type, int level, int id) {
+    switch (unit_type) {
+    case RGYUnitType::Core:  return get_core_mask(cpu_info, (RGYCoreType)level, id);
+    case RGYUnitType::Cache: return get_cache_mask(cpu_info, (RGYCacheLevel)level, id);
+    case RGYUnitType::Node:  return cpu_info->nodes[id].mask;
+    default: return 0;
+    }
+}
 
 cpu_info_t get_cpu_info() {
     cpu_info_t cpu;
@@ -473,11 +616,17 @@ int getCPUInfo(TCHAR *buffer, size_t nSize
             _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" [%.2fGHz]"), maxFrequency);
         }
 #endif //#if defined(_WIN32) || defined(_WIN64)
-        _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT)"), cpu_info.physical_cores, cpu_info.logical_cores);
+        _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" (%dC/%dT"), cpu_info.physical_cores, cpu_info.logical_cores);
+        if (cpu_info.maskCoreP != 0 && cpu_info.maskCoreE != 0 && cpu_info.physical_cores <= 64) {
+            _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(",%dP+%dE"), cpu_info.physical_cores_p, cpu_info.physical_cores_e);
+        }
+        _tcscpy_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(")"));
 #if ENCODER_QSV && !FOR_AUO
-        int cpuGen = getCPUGen(pSession);
-        if (cpuGen != CPU_GEN_UNKNOWN) {
-            _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" <%s>"), CPU_GEN_STR[cpuGen]);
+        if (pSession != nullptr) {
+            int cpuGen = getCPUGen(pSession);
+            if (cpuGen != CPU_GEN_UNKNOWN) {
+                _stprintf_s(buffer + _tcslen(buffer), nSize - _tcslen(buffer), _T(" <%s>"), CPU_GEN_STR[cpuGen]);
+            }
         }
 #endif
     }
@@ -532,3 +681,53 @@ double GetProcessAvgCPUUsage(PROCESS_TIME *start) {
 #endif
 }
 
+const TCHAR *RGYCacheTypeToStr(RGYCacheType type) {
+    switch (type) {
+    case RGYCacheType::Unified:     return _T(" ");
+    case RGYCacheType::Instruction: return _T("I");
+    case RGYCacheType::Data:        return _T("D");
+    default:                        return _T("-");
+    }
+}
+
+tstring print_cpu_info(const cpu_info_t *cpu_info) {
+    TCHAR buffer[256];
+    getCPUInfo(buffer, _countof(buffer));
+
+    tstring str = buffer;
+    str += _T("\n");
+    str += _T("CPU cores\n");
+    for (int ip = 0; ip < cpu_info->physical_cores; ip++) {
+        auto& targetCore = cpu_info->proc_list[ip];
+        str += strsprintf(_T("  core %2d "), ip);
+        if ((cpu_info->maskCoreP & targetCore.mask) == targetCore.mask) {
+            str += _T("P");
+        } else if ((cpu_info->maskCoreE & targetCore.mask) == targetCore.mask) {
+            str += _T("E");
+        } else {
+            str += _T(" ");
+        }
+        str += _T(" : ");
+        for (int il = 0; il < cpu_info->logical_cores; il++) {
+            const auto mask = 1llu << il;
+            str += (mask & targetCore.mask) ? _T("*") : _T("-");
+        }
+        str += _T("\n");
+    }
+
+    if (cpu_info->cache_count[0] > 0) {
+        str += _T("CPU caches\n");
+        for (int icache_level = 0; icache_level < MAX_CACHE_LEVEL; icache_level++) {
+            for (int ic = 0; ic < cpu_info->cache_count[icache_level]; ic++) {
+                auto& targetCache = cpu_info->caches[icache_level][ic];
+                str += strsprintf(_T("  cache L%d%s %2dway %6dKB: "), icache_level + 1, RGYCacheTypeToStr(targetCache.type), targetCache.associativity, targetCache.size / 1024);
+                for (int il = 0; il < cpu_info->logical_cores; il++) {
+                    const auto mask = 1llu << il;
+                    str += (mask & targetCache.mask) ? _T("*") : _T("-");
+                }
+                str += _T("\n");
+            }
+        }
+    }
+    return str;
+}

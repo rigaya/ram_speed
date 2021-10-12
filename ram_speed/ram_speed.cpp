@@ -41,6 +41,7 @@
 #include "cpu_info.h"
 #include "rgy_simd.h"
 #include "rgy_util.h"
+#include "rgy_thread_affinity.h"
 #include "rgy_env.h"
 #include "ram_speed.h"
 
@@ -48,20 +49,39 @@ static inline size_t align_size(size_t i) {
     return (i + 511) & ~511;
 }
 
-typedef struct {
-    int mode;
+struct RamSpeedParam {
+    RamSpeedMode test_mode;
+    RGYThreadAffinityMode thread_affinity_mode;
+
+    RamSpeedParam() : test_mode(RamSpeedMode::RW), thread_affinity_mode(RGYThreadAffinityMode::ALL) {};
+};
+
+struct RAM_SPEED_THREAD {
+    RamSpeedMode test_mode;
+    int thread_id;
     size_t check_size_bytes;
-    uint32_t thread_id;
+    RGYThreadAffinity thread_affinity;
     uint32_t physical_cores;
     double megabytes_per_sec;
-} RAM_SPEED_THREAD;
+};
 
+static int get_target_core_count(const cpu_info_t *cpuinfo, RGYThreadAffinityMode thread_affinity_mode) {
+    switch (thread_affinity_mode) {
+    case RGYThreadAffinityMode::PCORE: return cpuinfo->physical_cores_p;
+    case RGYThreadAffinityMode::ECORE: return cpuinfo->physical_cores_e;
+#if defined(_WIN32) || defined(_WIN64)
+    case RGYThreadAffinityMode::LOGICAL: return cpuinfo->logical_cores;
+    case RGYThreadAffinityMode::PHYSICAL: return cpuinfo->physical_cores;
+#endif //#if defined(_WIN32) || defined(_WIN64)
+    default: return cpuinfo->physical_cores;
+    }
+}
 
-typedef struct {
+struct RAM_SPEED_THREAD_WAKE {
     std::atomic<size_t> check_bit_start;
     std::atomic<size_t> check_bit_fin;
     size_t check_bit_all;
-} RAM_SPEED_THREAD_WAKE;
+};
 
 
 typedef uint32_t index_t;
@@ -165,9 +185,13 @@ void ram_latency_test(volatile index_t *src) {
 typedef void(*func_ram_test)(uint8_t *dst, uint32_t size, uint32_t count_n);
 
 void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_wk) {
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST); ////高優先度で実行
+    SetThreadAffinityMask(GetCurrentThread(), thread_prm->thread_affinity.getMask(0));
+    std::this_thread::sleep_for(std::chrono::milliseconds(0));
+
     const int TEST_COUNT = 31;
     size_t check_size_bytes = align_size(thread_prm->check_size_bytes);
-    const size_t test_bytes   = std::max<size_t>(((thread_prm->mode == RAM_SPEED_MODE_READ) ? 4096 : 2048) * 1024 * thread_prm->physical_cores, check_size_bytes);
+    const size_t test_bytes   = std::max<size_t>(((thread_prm->test_mode == RamSpeedMode::READ) ? 4096 : 2048) * 1024 * thread_prm->physical_cores, check_size_bytes);
     const size_t warmup_bytes = test_bytes * 2;
     uint8_t *ptr = (uint8_t *)_aligned_malloc(check_size_bytes, 64);
     for (size_t i = 0; i < check_size_bytes; i++)
@@ -187,7 +211,7 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     #endif
     };
 
-    const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->mode];
+    const func_ram_test ram_test = RAM_TEST_LIST[avx][thread_prm->test_mode];
     ram_test(ptr, check_size_bytes, std::max(1u, (uint32_t)(std::min<size_t>(64 * warmup_bytes, 16 * 1024 * 1024) / check_size_bytes)));
 
     thread_wk->check_bit_start |= (size_t)1 << thread_prm->thread_id;
@@ -220,15 +244,6 @@ void ram_speed_func(RAM_SPEED_THREAD *thread_prm, RAM_SPEED_THREAD_WAKE *thread_
     thread_prm->megabytes_per_sec = (check_size_bytes * (double)count_n / (1024.0 * 1024.0)) / (time * 0.000001);
 }
 
-int ram_speed_thread_id(int thread_index, const cpu_info_t& cpu_info) {
-    int thread_id = (thread_index % cpu_info.physical_cores) * (cpu_info.logical_cores / cpu_info.physical_cores) + (int)(thread_index / cpu_info.physical_cores);;
-#if defined(_WIN32) || defined(_WIN64)
-    return thread_id;
-#else
-    return cpu_info.proc_list[thread_id].processor_id;
-#endif
-}
-
 bool check_size_and_thread(size_t check_size, int thread_n) {
     for (int i = 0; i < thread_n; i++) {
         auto size_i0 = align_size((i + 0) * check_size / thread_n);
@@ -240,7 +255,7 @@ bool check_size_and_thread(size_t check_size, int thread_n) {
     return true;
 }
 
-double ram_speed_mt(size_t check_size, int mode, int thread_n) {
+double ram_speed_mt(const size_t check_size, const RamSpeedMode test_mode, const RGYThreadAffinityMode thread_affinity_mode, int thread_n) {
     thread_n = std::min<int>(thread_n, sizeof(size_t) * 8);
     std::vector<std::thread> threads;
     std::vector<RAM_SPEED_THREAD> thread_prm(thread_n);
@@ -252,21 +267,17 @@ double ram_speed_mt(size_t check_size, int mode, int thread_n) {
     thread_wake.check_bit_fin = 0;
     thread_wake.check_bit_all = 0;
     for (int i = 0; i < thread_n; i++) {
-        thread_wake.check_bit_all |= (size_t)1 << ram_speed_thread_id(i, cpu_info);
+        thread_wake.check_bit_all |= (size_t)1 << i;
     }
     for (int i = 0; i < thread_n; i++) {
         auto size_i0 = align_size((i + 0) * check_size / thread_n);
         auto size_i1 = align_size((i + 1) * check_size / thread_n);
         thread_prm[i].physical_cores = cpu_info.physical_cores;
-        thread_prm[i].mode = (mode == RAM_SPEED_MODE_RW) ? (i & 1) : mode;
+        thread_prm[i].test_mode = (test_mode == RamSpeedMode::RW) ? (RamSpeedMode)(i & 1) : test_mode;
         thread_prm[i].check_size_bytes = size_i1 - size_i0;
-        thread_prm[i].thread_id = ram_speed_thread_id(i, cpu_info);
+        thread_prm[i].thread_id = i;
+        thread_prm[i].thread_affinity = RGYThreadAffinity(thread_affinity_mode, 1llu << i);
         threads.push_back(std::thread(ram_speed_func, &thread_prm[i], &thread_wake));
-        //渡されたスレッドIDからスレッドAffinityを決定
-        //特定のコアにスレッドを縛り付ける
-        SetThreadAffinityMask(threads[i].native_handle(), (uint64_t)1 << (int)thread_prm[i].thread_id);
-        //高優先度で実行
-        SetThreadPriority(threads[i].native_handle(), THREAD_PRIORITY_HIGHEST);
     }
     for (int i = 0; i < thread_n; i++) {
         threads[i].join();
@@ -279,25 +290,16 @@ double ram_speed_mt(size_t check_size, int mode, int thread_n) {
     return sum;
 }
 
-std::vector<double> ram_speed_mt_list(size_t check_size, int mode, bool logical_core) {
+std::vector<double> ram_speed_mt_list(const size_t check_size, const RamSpeedMode test_mode, const RGYThreadAffinityMode thread_affinity_mode) {
     cpu_info_t cpu_info;
     get_cpu_info(&cpu_info);
 
     std::vector<double> results;
-    for (uint32_t ith = 1; ith <= cpu_info.physical_cores; ith++) {
+    for (int ith = 1; ith <= cpu_info.physical_cores; ith++) {
         if (!check_size_and_thread(check_size, ith)) {
             return results;
         }
-        results.push_back(ram_speed_mt(check_size, mode, ith));
-    }
-    if (logical_core && cpu_info.logical_cores != cpu_info.physical_cores) {
-        int smt = cpu_info.logical_cores / cpu_info.physical_cores;
-        for (uint32_t ith = cpu_info.physical_cores+1; ith <= cpu_info.logical_cores; ith++) {
-            if (!check_size_and_thread(check_size, ith)) {
-                return results;
-            }
-            results.push_back(ram_speed_mt(check_size, mode, ith));
-        }
+        results.push_back(ram_speed_mt(check_size, test_mode, thread_affinity_mode, ith));
     }
     return results;
 }
@@ -465,7 +467,10 @@ struct inter_core_data {
     double result;
 };
 
-void func_inter_core_latency1(inter_core_data *data) {
+void func_inter_core_latency1(inter_core_data *data, uint64_t threadMask1) {
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST); //高優先度で実行
+    SetThreadAffinityMask(GetCurrentThread(), threadMask1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(0));
     data->start++;
     while (data->start < 2) {
         // busy spin
@@ -485,7 +490,10 @@ void func_inter_core_latency1(inter_core_data *data) {
     data->result = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - start).count() / (double)(INTER_CORE_ITER * 2);
 }
 
-void func_inter_core_latency2(inter_core_data *data) {
+void func_inter_core_latency2(inter_core_data *data, uint64_t threadMask2) {
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+    SetThreadAffinityMask(GetCurrentThread(), threadMask2);
+    std::this_thread::sleep_for(std::chrono::milliseconds(0));
     data->start++;
     while (data->start < 2) {
         // busy spin
@@ -500,21 +508,14 @@ void func_inter_core_latency2(inter_core_data *data) {
     }
 }
 
-double inter_core_latency(int thread1, int thread2) {
+double inter_core_latency(uint64_t threadMask1, uint64_t threadMask2) {
     inter_core_data shared_data;
     shared_data.s1 = 0;
     shared_data.s2 = 0;
     shared_data.abort = false;
     shared_data.start = 0;
-    std::thread th1(func_inter_core_latency1, &shared_data);
-    std::thread th2(func_inter_core_latency2, &shared_data);
-    //渡されたスレッドIDからスレッドAffinityを決定
-    //特定のコアにスレッドを縛り付ける
-    SetThreadAffinityMask(th1.native_handle(), (uint64_t)1 << (int)thread1);
-    SetThreadAffinityMask(th2.native_handle(), (uint64_t)1 << (int)thread2);
-    //高優先度で実行
-    SetThreadPriority(th1.native_handle(), THREAD_PRIORITY_HIGHEST);
-    SetThreadPriority(th2.native_handle(), THREAD_PRIORITY_HIGHEST);
+    std::thread th1(func_inter_core_latency1, &shared_data, threadMask1);
+    std::thread th2(func_inter_core_latency2, &shared_data, threadMask2);
     th1.join();
     th2.join();
     return shared_data.result;
@@ -607,7 +608,6 @@ std::string printHelp() {
 }
 
 int main(int argc, char **argv) {
-    bool check_logical_cores = false;
     bool chek_ram_only = false;
     bool check_latency_mem = true;
     bool check_latency_intercore = true;
@@ -615,6 +615,8 @@ int main(int argc, char **argv) {
     bool check_bandwidth_write = true;
     int interval_sleep = 0;
     int min_latency_tests = 5;
+    RamSpeedParam prm;
+    prm.thread_affinity_mode = RGYThreadAffinityMode::PHYSICAL;
     std::string outfilename;
     for (int i = 1; i < argc; i++) {
         if (std::string(argv[i]) == "--output" || std::string(argv[i]) == "-o") {
@@ -630,12 +632,23 @@ int main(int argc, char **argv) {
             printf("%s\n", printHelp().c_str());
             exit(0);
         }
-        if (std::string(argv[i]) == "--logical-cores") {
-            check_logical_cores = true;
-            continue;
+        if (std::string(argv[i]) == "--cpuinfo" || std::string(argv[i]) == "-h") {
+            cpu_info_t cpuinfo = get_cpu_info();
+            printf("%s\n", print_cpu_info(&cpuinfo).c_str());
+            exit(0);
         }
-        if (std::string(argv[i]) == "--physical-cores") {
-            check_logical_cores = false;
+        if (std::string(argv[i]) == "--target") {
+            if (i + 1 < argc) {
+                prm.thread_affinity_mode = rgy_str_to_thread_affnity_mode(argv[i+1]);
+                if (prm.thread_affinity_mode == RGYThreadAffinityMode::END) {
+                    fprintf(stderr, "Invalid param for --target.");
+                    exit(1);
+                }
+            } else {
+                fprintf(stderr, "Invalid param for --target.");
+                exit(1);
+            }
+            i++;
             continue;
         }
         if (std::string(argv[i]) == "--mem-only") {
@@ -694,121 +707,128 @@ int main(int argc, char **argv) {
         outfilename = getOutFilename();
     }
 
-    FILE *fp = fopen(outfilename.c_str(), "w");
+    std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(outfilename.c_str(), "w"), fclose);
     if (fp == NULL) {
         fprintf(stderr, "failed to open output file.\n");
-    } else {
-        print(fp, "%s\n\n", printVersion().c_str());
-        print(fp, "%s\n", getEnviromentInfo().c_str());
+        return 1;
+    }
+    print(fp.get(), "%s\n\n", printVersion().c_str());
+    print(fp.get(), "%s\n", getEnviromentInfo().c_str());
 
-        cpu_info_t cpu_info;
-        get_cpu_info(&cpu_info);
-        if (check_latency_intercore) {
-            print(fp, "inter core latency\n");
-            for (int j = 0; j < (int)cpu_info.physical_cores; j++) {
-                for (int i = 0; i < (int)cpu_info.physical_cores; i++) {
-                    if (i == j && cpu_info.physical_cores == cpu_info.logical_cores) {
-                        print(fp, ",       ");
-                    } else {
-                        int ithread = ram_speed_thread_id(i, cpu_info);
-                        int jthread = (i == j) ? ram_speed_thread_id(i + cpu_info.physical_cores, cpu_info) : ram_speed_thread_id(j, cpu_info);
-                        double result = inter_core_latency(ithread, jthread);
-                        print(fp, "%s %7.2f", (i) ? "," : "", result);
-                    }
+    const cpu_info_t cpu_info = get_cpu_info();
+    if (check_latency_intercore) {
+        const int target_core_count = get_target_core_count(&cpu_info, prm.thread_affinity_mode);
+        print(fp.get(), "inter core latency\n");
+        for (int j = 0; j < target_core_count; j++) {
+            for (int i = 0; i < target_core_count; i++) {
+                const auto& proc_info = cpu_info.proc_list[i];
+                if (i == j && proc_info.logical_cores <= 1) {
+                    print(fp.get(), ",       ");
+                } else {
+                    const auto ithread = RGYThreadAffinity(prm.thread_affinity_mode, 1llu<<i);
+                    const auto jthread = RGYThreadAffinity(prm.thread_affinity_mode, 1llu<<j);
+                    const double result = inter_core_latency(ithread.getMask(0), jthread.getMask((i==j) ? 1 : 0));
+                    print(fp.get(), "%s %7.2f", (i) ? "," : "", result);
                 }
-                print(fp, "\n");
             }
-            fflush(fp);
-            if (interval_sleep > 0) {
+            print(fp.get(), "\n");
+        }
+        fflush(fp.get());
+        if (interval_sleep > 0) {
+            std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+        }
+    }
+
+    const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8) * 32 * 1024 * 1024));
+    if (check_latency_mem) {
+        const auto maskPrev = SetThreadAffinityMask(GetCurrentThread(), RGYThreadAffinity(prm.thread_affinity_mode).getMask(0));
+        std::this_thread::sleep_for(std::chrono::milliseconds(0));
+
+        print(fp.get(), "\nram latency\n");
+        const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
+        const std::map<RamLatencyTest, std::string> latency_tests_name = {
+            { RL_TEST_SEQUENTIAL, "sequantial" },
+            { RL_TEST_CL_FORWARD, "cacheline forward" },
+            { RL_TEST_CL_FORWARD2, "cacheline forward2" },
+            { RL_TEST_RANDOM_PAGE, "page random" },
+            { RL_TEST_RANDOM_FULL, "full random" }
+        };
+        for (auto test : latency_tests) {
+            print(fp.get(), ", %s", latency_tests_name.at(test).c_str());
+        }
+        print(fp.get(), "\n");
+        fflush(fp.get());
+
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            print(fp.get(), "%6zd", check_size >> 10);
+            int test_count = 5;
+            if      (check_size <       256 * 1024) test_count = 61;
+            else if (check_size <  1 * 1024 * 1024) test_count = 31;
+            else if (check_size <  2 * 1024 * 1024) test_count = 21;
+            else if (check_size <  4 * 1024 * 1024) test_count = 15;
+            else if (check_size < 16 * 1024 * 1024) test_count = 11;
+            test_count = std::min(test_count, min_latency_tests);
+            for (auto test : latency_tests) {
+                double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
+                print(fp.get(), ", %.2f", latency);
+            }
+            print(fp.get(), "\n");
+            if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                fflush(fp.get());
                 std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
             }
         }
-
-        const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8u) * 32 * 1024 * 1024));
-        if (check_latency_mem) {
-            print(fp, "\nram latency\n");
-            const std::array<RamLatencyTest, 3> latency_tests = { RL_TEST_SEQUENTIAL, RL_TEST_CL_FORWARD2, RL_TEST_RANDOM_FULL };
-            const std::map<RamLatencyTest, std::string> latency_tests_name = {
-                { RL_TEST_SEQUENTIAL, "sequantial" },
-                { RL_TEST_CL_FORWARD, "cacheline forward" },
-                { RL_TEST_CL_FORWARD2, "cacheline forward2" },
-                { RL_TEST_RANDOM_PAGE, "page random" },
-                { RL_TEST_RANDOM_FULL, "full random" }
-            };
-            for (auto test : latency_tests) {
-                print(fp, ", %s", latency_tests_name.at(test).c_str());
-            }
-            print(fp, "\n");
-            fflush(fp);
-
-            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-                print(fp, "%6zd", check_size >> 10);
-                int test_count = 5;
-                if      (check_size <       256 * 1024) test_count = 61;
-                else if (check_size <  1 * 1024 * 1024) test_count = 31;
-                else if (check_size <  2 * 1024 * 1024) test_count = 21;
-                else if (check_size <  4 * 1024 * 1024) test_count = 15;
-                else if (check_size < 16 * 1024 * 1024) test_count = 11;
-                test_count = std::min(test_count, min_latency_tests);
-                for (auto test : latency_tests) {
-                    double latency = ram_latency(test, check_size, std::max(1, (int)(2 * 1024 * 1024 / check_size)), test_count);
-                    print(fp, ", %.2f", latency);
-                }
-                print(fp, "\n");
-                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
-                    fflush(fp);
-                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
-                }
-            }
-            fflush(fp);
-        }
-
-        if (check_bandwidth_read) {
-            print(fp, "\nread\n");
-            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-                if (i_size >= sizeof(size_t) * 8) {
-                    break;
-                }
-                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-                const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
-                fprintf(fp, "%6zd,", check_size >> 10);
-                std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_READ, check_logical_cores);
-                for (uint32_t i = 0; i < results.size(); i++) {
-                    fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                    fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
-                }
-                fprintf(fp, "\n");
-                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
-                    fflush(fp);
-                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
-                }
-            }
-            fflush(fp);
-        }
-
-        if (check_bandwidth_write) {
-            print(fp, "\nwrite\n");
-            for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
-                if (i_size >= sizeof(size_t) * 8) {
-                    break;
-                }
-                const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-                const bool overMB = false; //check_size >= 1024 * 1024;
-                fprintf(fp, "%6zd,", check_size >> 10);
-                std::vector<double> results = ram_speed_mt_list(check_size, RAM_SPEED_MODE_WRITE, check_logical_cores);
-                for (uint32_t i = 0; i < results.size(); i++) {
-                    fprintf(fp, "%6.1f,", results[i] / 1024.0);
-                    fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
-                }
-                fprintf(fp, "\n");
-                if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
-                    fflush(fp);
-                    std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
-                }
-            }
-            fclose(fp);
-        }
+        fflush(fp.get());
+        SetThreadAffinityMask(GetCurrentThread(), maskPrev);
+        std::this_thread::sleep_for(std::chrono::milliseconds(0));
     }
+
+    if (check_bandwidth_read) {
+        print(fp.get(), "\nread\n");
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+            if (i_size >= sizeof(size_t) * 8) {
+                break;
+            }
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
+            fprintf(fp.get(), "%6zd,", check_size >> 10);
+            std::vector<double> results = ram_speed_mt_list(check_size, RamSpeedMode::READ, prm.thread_affinity_mode);
+            for (uint32_t i = 0; i < results.size(); i++) {
+                fprintf(fp.get(), "%6.1f,", results[i] / 1024.0);
+                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+            }
+            fprintf(fp.get(), "\n");
+            if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                fflush(fp.get());
+                std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+            }
+        }
+        fflush(fp.get());
+    }
+
+    if (check_bandwidth_write) {
+        print(fp.get(), "\nwrite\n");
+        for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
+            if (i_size >= sizeof(size_t) * 8) {
+                break;
+            }
+            const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
+            const bool overMB = false; //check_size >= 1024 * 1024;
+            fprintf(fp.get(), "%6zd,", check_size >> 10);
+            std::vector<double> results = ram_speed_mt_list(check_size, RamSpeedMode::WRITE, prm.thread_affinity_mode);
+            for (uint32_t i = 0; i < results.size(); i++) {
+                fprintf(fp.get(), "%6.1f,", results[i] / 1024.0);
+                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+            }
+            fprintf(fp.get(), "\n");
+            if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
+                fflush(fp.get());
+                std::this_thread::sleep_for(std::chrono::seconds(interval_sleep));
+            }
+        }
+        fclose(fp.get());
+    }
+    return 0;
 }
 
