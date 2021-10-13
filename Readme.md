@@ -14,7 +14,7 @@ It will run performace tests below.
 Please note that this app is sensitive to background tasks, and might not get expected results.
 
 ## System Requirements
-Windows 8.1/10 (x86_64)  
+Windows 10/11 (x86_64)  
 Linux (x86_64/others)  
 
 ## Results
