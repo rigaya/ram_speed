@@ -744,7 +744,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8) * 32 * 1024 * 1024));
+    const double max_size = std::log2((double)(std::max(cpu_info.physical_cores, 8) * 64 * 1024 * 1024));
     if (check_latency_mem) {
         const auto maskPrev = SetThreadAffinityMask(GetCurrentThread(), RGYThreadAffinity(prm.thread_affinity_mode).getMask(0));
         std::this_thread::sleep_for(std::chrono::milliseconds(0));
