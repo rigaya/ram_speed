@@ -293,9 +293,10 @@ double ram_speed_mt(const size_t check_size, const RamSpeedMode test_mode, const
 std::vector<double> ram_speed_mt_list(const size_t check_size, const RamSpeedMode test_mode, const RGYThreadAffinityMode thread_affinity_mode) {
     cpu_info_t cpu_info;
     get_cpu_info(&cpu_info);
+    const int target_core_count = get_target_core_count(&cpu_info, thread_affinity_mode);
 
     std::vector<double> results;
-    for (int ith = 1; ith <= cpu_info.physical_cores; ith++) {
+    for (int ith = 1; ith <= target_core_count; ith++) {
         if (!check_size_and_thread(check_size, ith)) {
             return results;
         }
