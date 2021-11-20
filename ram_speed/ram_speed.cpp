@@ -730,7 +730,7 @@ int main(int argc, char **argv) {
             for (int i = 0; i < target_core_count; i++) {
                 const auto& proc_info = cpu_info.proc_list[i];
                 if (i == j && proc_info.logical_cores <= 1) {
-                    print(fp.get(), ",       ");
+                    print(fp.get(), ",        ");
                 } else {
                     const auto ithread = RGYThreadAffinity(prm.thread_affinity_mode, 1llu<<i);
                     const auto jthread = RGYThreadAffinity(prm.thread_affinity_mode, 1llu<<j);
@@ -768,7 +768,7 @@ int main(int argc, char **argv) {
 
         for (double i_size = (chek_ram_only) ? max_size : 12; i_size <= max_size; i_size += step(i_size)) {
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
-            print(fp.get(), "%6zd", check_size >> 10);
+            print(fp.get(), "%7zd", check_size >> 10);
             int test_count = 5;
             if      (check_size <       256 * 1024) test_count = 61;
             else if (check_size <  1 * 1024 * 1024) test_count = 31;
@@ -799,11 +799,11 @@ int main(int argc, char **argv) {
             }
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             const bool overMB = false; // check_size >= 1024 * 1024 * 1024;
-            fprintf(fp.get(), "%6zd,", check_size >> 10);
+            fprintf(fp.get(), "%7zd,", check_size >> 10);
             std::vector<double> results = ram_speed_mt_list(check_size, RamSpeedMode::READ, prm.thread_affinity_mode);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp.get(), "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                fprintf(stderr, "%7zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
             fprintf(fp.get(), "\n");
             if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
@@ -822,11 +822,11 @@ int main(int argc, char **argv) {
             }
             const size_t check_size = align_size(size_t(std::pow(2.0, i_size) + 0.5));
             const bool overMB = false; //check_size >= 1024 * 1024;
-            fprintf(fp.get(), "%6zd,", check_size >> 10);
+            fprintf(fp.get(), "%7zd,", check_size >> 10);
             std::vector<double> results = ram_speed_mt_list(check_size, RamSpeedMode::WRITE, prm.thread_affinity_mode);
             for (uint32_t i = 0; i < results.size(); i++) {
                 fprintf(fp.get(), "%6.1f,", results[i] / 1024.0);
-                fprintf(stderr, "%6zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
+                fprintf(stderr, "%7zd %s, %2d threads: %6.1f GB/s\n", check_size >> ((overMB) ? 20 : 10), (overMB) ? "MB" : "KB", i+1, results[i] / 1024.0);
             }
             fprintf(fp.get(), "\n");
             if (interval_sleep > 0 && check_size >= 1 * 1024 * 1024) {
