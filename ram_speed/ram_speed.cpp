@@ -579,7 +579,7 @@ void print(FILE *fp, const char *format, ...) {
     va_end(args);
 }
 
-std::string getOutFilename() {
+std::string getOutFilename(const RGYThreadAffinityMode target) {
     char mes[256];
     getCPUName(mes, sizeof(mes));
 
@@ -592,6 +592,8 @@ std::string getOutFilename() {
             outfilename = str_replace(outfilename, "  ", " ");
         }
     }
+    outfilename += _T("_");
+    outfilename += rgy_thread_affnity_mode_to_str(target);
     outfilename = str_replace(outfilename, " ", "_") + ".csv";
     return outfilename;
 }
@@ -746,7 +748,7 @@ int main(int argc, char **argv) {
         }
     }
     if (outfilename.length() == 0) {
-        outfilename = getOutFilename();
+        outfilename = getOutFilename(prm.thread_affinity_mode);
     }
 
     std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(outfilename.c_str(), "w"), fclose);
