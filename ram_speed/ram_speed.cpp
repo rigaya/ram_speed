@@ -719,6 +719,7 @@ int main(int argc, char **argv) {
     const cpu_info_t cpu_info = get_cpu_info();
 
     print(fp.get(), "%s\n\n", printVersion().c_str());
+    print(fp.get(), "test target: %s\n\n", rgy_thread_affnity_mode_to_str(prm.thread_affinity_mode));
     print(fp.get(), "%s\n", getEnviromentInfo().c_str());
     print(fp.get(), "%s\n", print_cpu_info(&cpu_info).c_str());
 
