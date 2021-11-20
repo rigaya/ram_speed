@@ -27,7 +27,7 @@
 
 #pragma once
 
-#define RAM_SPEED_VERSION "0.02"
+#define RAM_SPEED_VERSION "0.03"
 
 enum RamSpeedMode {
     READ = 0,

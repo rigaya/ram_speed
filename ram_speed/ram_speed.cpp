@@ -460,9 +460,21 @@ double ram_latency(RamLatencyTest test, size_t size, int loop_count, int test_co
 
 const int INTER_CORE_ITER = 100000;
 
+#define USE_SINGLE_ATOMIC 1
+#define USE_ATOMIC 0
+
 struct inter_core_data {
+#if USE_SINGLE_ATOMIC
+    alignas(64) std::atomic<int> s1;
+#else
+#if USE_ATOMIC
     alignas(64) std::atomic<int> s1;
     alignas(64) std::atomic<int> s2;
+#else
+    alignas(64) int s1;
+    alignas(64) int s2;
+#endif
+#endif
     alignas(64) bool abort;
     alignas(64) std::atomic<int> start;
     double result;
@@ -476,19 +488,30 @@ void func_inter_core_latency1(inter_core_data *data, uint64_t threadMask1) {
     while (data->start < 2) {
         // busy spin
     }
-    auto value = data->s1.load();
     auto start = std::chrono::high_resolution_clock::now();
-    while (data->s1 < INTER_CORE_ITER) {
-        int new_val;
-        while ((new_val = data->s2) != value) {
-            // busy spin
+#if USE_SINGLE_ATOMIC
+    auto value = 1;
+    while (value < INTER_CORE_ITER) {
+        auto expected = value - 1;
+        if (data->s1.compare_exchange_strong(expected, value)) {
+            value += 2;
         }
-        value = new_val + 1;
-        data->s1.exchange(value);
     }
+#else
+    auto value = 3;
+    while (value < INTER_CORE_ITER) {
+        if (data->s2 == value - 1) {
+            data->s1 = value;
+#if !USE_ATOMIC
+            _mm_mfence();
+#endif
+            value += 2;
+        }
+    }
+#endif
     auto fin = std::chrono::high_resolution_clock::now();
     data->abort = true;
-    data->result = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - start).count() / (double)(INTER_CORE_ITER * 2);
+    data->result = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - start).count() / (double)(INTER_CORE_ITER);
 }
 
 void func_inter_core_latency2(inter_core_data *data, uint64_t threadMask2) {
@@ -499,20 +522,35 @@ void func_inter_core_latency2(inter_core_data *data, uint64_t threadMask2) {
     while (data->start < 2) {
         // busy spin
     }
-    auto value = data->s2.load();
-    while (data->s1 < INTER_CORE_ITER) {
-        while (value == data->s1) {
-            // busy spin
+    auto value = 2;
+#if USE_SINGLE_ATOMIC
+    while (value < INTER_CORE_ITER) {
+        auto expected = value - 1;
+        if (data->s1.compare_exchange_strong(expected, value)) {
+            value += 2;
         }
-        value++;
-        data->s2.exchange(value);
     }
+#else
+    while (value < INTER_CORE_ITER) {
+        if (data->s1 == value - 1) {
+            data->s2 = value;
+#if !USE_ATOMIC
+            _mm_mfence();
+#endif
+            value += 2;
+        }
+    }
+#endif
 }
 
 double inter_core_latency(uint64_t threadMask1, uint64_t threadMask2) {
     inter_core_data shared_data;
+#if USE_SINGLE_ATOMIC
     shared_data.s1 = 0;
+#else
+    shared_data.s1 = 1;
     shared_data.s2 = 0;
+#endif
     shared_data.abort = false;
     shared_data.start = 0;
     std::thread th1(func_inter_core_latency1, &shared_data, threadMask1);
