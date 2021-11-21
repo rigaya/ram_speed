@@ -65,7 +65,7 @@ struct RAM_SPEED_THREAD {
     double megabytes_per_sec;
 };
 
-static int get_target_core_count(const cpu_info_t *cpuinfo, RGYThreadAffinityMode thread_affinity_mode) {
+static int get_target_core_count(const cpu_info_t *cpuinfo, const RGYThreadAffinityMode thread_affinity_mode) {
     switch (thread_affinity_mode) {
     case RGYThreadAffinityMode::PCORE: return cpuinfo->physical_cores_p;
     case RGYThreadAffinityMode::ECORE: return cpuinfo->physical_cores_e;
@@ -75,6 +75,17 @@ static int get_target_core_count(const cpu_info_t *cpuinfo, RGYThreadAffinityMod
 #endif //#if defined(_WIN32) || defined(_WIN64)
     default: return cpuinfo->physical_cores;
     }
+}
+
+static tstring get_target_core_string(const cpu_info_t *cpuinfo, const RGYThreadAffinityMode thread_affinity_mode, const int id) {
+    auto ithread = RGYThreadAffinity(thread_affinity_mode, 1llu << id).getMask(0);
+    const TCHAR* core_type = _T(" ");
+    if ((cpuinfo->maskCoreP & ithread) == ithread) {
+        core_type = _T("P");
+    } else if ((cpuinfo->maskCoreE & ithread) == ithread) {
+        core_type = _T("E");
+    }
+    return strsprintf(_T("%4d %s"), id, core_type);
 }
 
 struct RAM_SPEED_THREAD_WAKE {
@@ -766,7 +777,13 @@ int main(int argc, char **argv) {
     if (check_latency_intercore) {
         const int target_core_count = get_target_core_count(&cpu_info, prm.thread_affinity_mode);
         print(fp.get(), "inter core latency (ns)\n");
+        print(fp.get(), "      ");
+        for (int i = 0; i < target_core_count; i++) {
+            print(fp.get(), ",  %s", get_target_core_string(&cpu_info, prm.thread_affinity_mode, i).c_str());
+        }
+        print(fp.get(), "\n");
         for (int j = 0; j < target_core_count; j++) {
+            print(fp.get(), "%s,", get_target_core_string(&cpu_info, prm.thread_affinity_mode, j).c_str());
             for (int i = 0; i < target_core_count; i++) {
                 const auto& proc_info = cpu_info.proc_list[i];
                 if (i == j && proc_info.logical_cores <= 1) {
