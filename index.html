@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang = "ja">
+<head>
+  <meta charset = "UTF-8">
+  <title>ram_speed results</title>
+
+  <link rel="stylesheet" href="results/styles.css">
+</head>
+
+
+
+<body>
+<div class="main_block">
+<h1>ram_speed results</h1>
+<div class="first_message">
+<strong>Here shows results collected by <a href="https://github.com/rigaya/ram_speed">ram_speed</a> application.</strong><br>
+</div>
+<div>
+  <section class="resultTabs">
+    <input id="TAB-B01" type="radio" name="TAB-B" checked="checked">
+    <label class="tabLabel" for="TAB-B01">Latency (cacheline)</label>
+    <div class="content" id="resultTab1"><div>
+      <canvas id="chart_20221016_ram_latency_cacheline"></canvas>
+    </div></div>
+    <input id="TAB-B02" type="radio" name="TAB-B" checked="checked">
+    <label class="tabLabel" for="TAB-B02">Latency (random)</label>
+    <div class="content" id="resultTab2"><div>
+      <canvas id="chart_20221016_ram_latency_full_random"></canvas>
+    </div></div>
+    <input id="TAB-B03" type="radio" name="TAB-B">
+    <label class="tabLabel" for="TAB-B03">Bandwidth (Single)</label>
+    <div class="content" id="resultTab3"><div>
+      <canvas id="chart_20221016_ram_bandwidth_st"></canvas>
+    </div></div>
+    <input id="TAB-B04" type="radio" name="TAB-B">
+    <label class="tabLabel" for="TAB-B04">Bandwidth (Multi)</label>
+    <div class="content" id="resultTab4"><div>
+      <canvas id="chart_20221016_ram_bandwidth_mt"></canvas>
+    </div></div>
+    <input id="TAB-B05" type="radio" name="TAB-B">
+    <label class="tabLabel" for="TAB-B05">RAM Bandwidth (Per Thread)</label>
+    <div class="content" id="resultTab5"><div>
+      <canvas id="chart_20221016_ram_bandwidth_threads"></canvas>
+    </div></div>
+  </section>
+
+</div>
+<div class="system_conf_data">
+<table class="simpleBlue">
+  <tr><th>CPU</th><td>Cores</td><td>RAM</td><td>RAM Timing</td></tr>
+  <tr><th>i9 12900K</th><td>8P+8E/24T</td><td>DDR4-3600 2ch</td><td>16-19-19-39-1</td></tr>
+  <tr><th>i7 11700K (Gear1/2)</th><td>8C/16T</td><td>DDR4-3600 2ch</td><td>18-22-22-42-2</td></tr>
+  <tr><th>i5 1035G7</th><td>4C/8T</td><td>LPDDR4X-3733 2ch</td><td>20-20-20-45-?</td></tr>
+  <tr><th>i9 7980XE @ 4.0GHz</th><td>18C/36T</td><td>DDR4-3600 4ch</td><td>17-19-19-41-1</td></tr>
+  <tr><th>i7 4610Y</th><td>2C/4T</td><td>DDR3-1600 2ch</td><td>11-11-11-28-1</td></tr>
+  <tr><th>i3 4170</th><td>2C/4T</td><td>DDR3-2133 2ch</td><td>9-11-10-28-2</td></tr>
+  <tr><th>i5 5500U</th><td>2C/4T</td><td>DDR3-1600 2ch</td><td>11-11-11-28-1</td></tr>
+  <tr><th>i5 2410M</th><td>2C/4T</td><td>DDR3-1333 2ch</td><td>9-9-9-24-1</td></tr>
+  <tr><th>Core2Duo P8600</th><td>2C/2T</td><td>DDR2-800 2ch</td><td>6-6-6-18-?</td></tr>
+  <tr><th>Ryzen9 7950X</th><td>16C/32T</td><td>DDR5-6000</td><td>32-38-38-96-1</td></tr>
+  <tr><th>Ryzen9 5950X</th><td>16C/32T</td><td>DDR4-3600 2ch</td><td>19-20-20-40-1</td></tr>
+  <tr><th>Ryzen9 5950X (1CCD)</th><td>8C/16T</td><td>DDR4-3600 2ch</td><td>19-20-20-40-1</td></tr>
+  <tr><th>Ryzen7 3700X</th><td>8C/16T</td><td>DDR4-3600 2ch</td><td>18-22-22-43-1</td></tr>
+  <tr><th>Ryzen3 3200G @ 4.2GHz</th><td>4C/4T</td><td>DDR4-2666 2ch</td><td>16-18-18-40-1</td></tr>
+  <tr><th>Ryzen7 1700X</th><td>8C/16T</td><td>DDR4-2666 2ch</td><td>16-16-16-38-1</td></tr>
+</table>
+
+</div>
+</div>
+</body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"></script>
+  <script src="results/chart_log2.js"></script>
+  <script src="results/result_chart.js"></script>
+</html>

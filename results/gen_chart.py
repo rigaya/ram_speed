@@ -134,7 +134,7 @@ class BenchmarkData:
                         istart = 1 if not inter_core_latency_header is None else 0
                         for i in range(istart, len(value)):
                             if len(value[i]) > 0:
-                                core_x = int(inter_core_latency_header[i]) if not inter_core_latency_header is None else i
+                                core_x = int(inter_core_latency_header[i].rstrip(' E').rstrip(' P')) if not inter_core_latency_header is None else i
                                 core_y = inter_core_latency_row
                                 try:
                                     latency = float(value[i])
