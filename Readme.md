@@ -18,6 +18,10 @@ Windows 10/11 (x86_64)
 Linux (x86_64/others)  
 
 ## Results
+All results are shown better on the page below.
+
+[ram_speed results](https://rigaya.github.io/ram_speed/)
+
 ### Tested Systems
 | CPU                   | Cores   |  RAM              | RAM Timing    |
 |:---                   |:---     |:---              |:---           |
