@@ -197,11 +197,11 @@ else
 fi
 cnf_write "OK"
 
-if cxx_check "c++14" "${CXXFLAGS} -std=c++14 ${LDFLAGS}" ; then
+if cxx_check "c++17" "${CXXFLAGS} -std=c++17 ${LDFLAGS}" ; then
     cnf_write "OK"
-    CXXFLAGS="-std=c++14 ${CXXFLAGS}"
+    CXXFLAGS="-std=c++17 ${CXXFLAGS}"
 else
-    cnf_write "${CXX} does not work with -std=c++14"
+    cnf_write "${CXX} does not work with -std=c++17"
     exit 1
 fi
 
