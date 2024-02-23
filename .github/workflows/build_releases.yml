@@ -1,0 +1,95 @@
+name: Build Windows Releases
+
+on:
+  push:
+    branches:
+      - master
+      - actions
+    tags:
+      - '*'
+
+jobs:
+  get_version_name:
+    name: Get version name
+    runs-on: ubuntu-latest
+    outputs:
+      rev_count: ${{ steps.rev.outputs.rev_count }}
+      version_name: ${{ steps.rev.outputs.version_name }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Set version name
+      id: rev
+      run: |
+        cd ${{ github.workspace }}
+        REVCOUNT=`git rev-list --count HEAD`
+        echo "rev_count=${REVCOUNT}" >> $GITHUB_OUTPUT
+        if [[ "${{ github.ref }}" =~ "refs/tags/" ]]; then
+          VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+        else
+          VERSION=r${REVCOUNT}
+        fi
+        echo "version_name=${VERSION}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Upload Release Asset
+    runs-on: windows-2022
+    needs: get_version_name
+
+    defaults:
+      run:
+        shell: cmd
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            platform: Win32
+          - arch: x64
+            platform: x64
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: ${{ matrix.arch }}
+
+      - name: MSBuild
+        run: |
+          msbuild ram_speed.sln /t:build /p:configuration=Release /p:Platform=${{ matrix.platform }} -maxcpucount
+
+      - name: Create Archieve
+        id: archieve
+        run: |
+          mkdir ram_speed_release
+          copy ${{ matrix.platform }}\Release\ram_speed.exe ram_speed_release
+          7z a -mx9 ram_speed_${{ needs.get_version_name.outputs.version_name }}_${{ matrix.arch }}.zip .\ram_speed_release\*
+
+      - name: Check Version
+        if: startsWith(github.ref, 'refs/tags/')
+        id: check_ver
+        run: |
+          powershell "$ver = (Get-ItemProperty .\ram_speed_release\ram_speed.exe).VersionInfo.FileVersion; if ($ver -eq '${{ needs.get_version_name.outputs.version_name }}') { exit 0; } exit 1;"
+
+      - name: Calc hash
+        id: calc_hash
+        run: |
+          7z h -scrc* ram_speed_${{ needs.get_version_name.outputs.version_name }}_${{ matrix.arch }}.zip
+
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ram_speed_${{ needs.get_version_name.outputs.version_name }}_${{ matrix.arch }}.zip
