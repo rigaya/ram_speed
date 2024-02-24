@@ -9,7 +9,7 @@ PACKAGE_DESCRIPTION=
 PACKAGE_ROOT=.debpkg
 PACKAGE_VERSION=`git describe --tags | cut -f 1 --delim="-"`
 PACKAGE_ARCH=`uname -m`
-PACKAGE_ARCH=`echo ${PACKAGE_ARCH} | sed -e 's/x86_64/amd64/g'`
+PACKAGE_ARCH=`echo ${PACKAGE_ARCH} | sed -e 's/x86_64/amd64/g' | sed -e 's/aarch64/arm64/g'`
 
 mkdir -p ${PACKAGE_ROOT}/DEBIAN
 build_pkg/replace.py \
